@@ -15,6 +15,7 @@ import AttendanceRecap from "@/pages/attendance/AttendanceRecap";
 import AttendanceExport from "@/pages/attendance/AttendanceExport";
 import Students from "@/pages/students/Students";
 import Teachers from "@/pages/teachers/Teachers";
+import AttendancePermissions from "@/pages/attendance/AttendancePermissions";
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
 
               {/* Master Data Management: Accessible strictly by ADMIN */}
               <Route element={<RoleRoute allowedRoles={[ROLES.ADMIN]} />}>
+                <Route path="/attendance/permissions" element={<AttendancePermissions />} />
                 <Route path="/students" element={<Students />} />
                 <Route path="/teachers" element={<Teachers />} />
               </Route>

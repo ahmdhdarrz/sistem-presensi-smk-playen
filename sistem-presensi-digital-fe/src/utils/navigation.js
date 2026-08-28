@@ -5,7 +5,8 @@ import {
   Users, 
   UserCog,
   Eye,
-  Download
+  Download,
+  UserCheck
 } from "lucide-react";
 import { ROLES } from "@/utils/roles";
 
@@ -25,6 +26,11 @@ export const navigationConfig = {
       label: "Rekap Absensi",
       path: "/attendance/recap",
       icon: FileText,
+    },
+    {
+      label: "Izin Harian",
+      path: "/attendance/permissions",
+      icon: UserCheck,
     },
     {
       label: "Data Siswa",

@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from "react";
-import { UserPlus } from "lucide-react";
+import React, { useState, useMemo, useEffect } from "react";
+import { UserPlus, Loader2 } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,109 +15,138 @@ import {
 import StudentFilters from "@/components/students/StudentFilters";
 import StudentsTable from "@/components/students/StudentsTable";
 import StudentFormDialog from "@/components/students/StudentFormDialog";
-// TODO: Replace masterStudents with Laravel API response — GET /api/students
-import { masterStudents } from "@/data/dummyStudents";
-
-// Seed ID untuk siswa yang ditambahkan via form (tidak bentrok dengan dummy id yang berbasis angka)
-let nextTempId = 99000;
+import {
+  getSiswa,
+  createSiswa,
+  updateSiswa,
+  deleteSiswa,
+  getKelas,
+} from "@/services/siswaService";
 
 function Students() {
-  // ─── State utama ──────────────────────────────────────────────────────────
-  const [students, setStudents] = useState(masterStudents);
+  const [students, setStudents] = useState([]);
+  const [classes, setClasses] = useState([]); // [{id, nama_kelas}]
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedClass, setSelectedClass] = useState("all");
 
-  // ─── State dialog ─────────────────────────────────────────────────────────
   const [formOpen, setFormOpen] = useState(false);
-  const [formMode, setFormMode] = useState("create"); // "create" | "edit"
+  const [formMode, setFormMode] = useState("create");
   const [editTarget, setEditTarget] = useState(null);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  // ─── Toast / feedback sederhana ───────────────────────────────────────────
-  const [toast, setToast] = useState(null); // { message, type: "success"|"error" }
-
+  const [toast, setToast] = useState(null);
   const showToast = (message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
-  // ─── Filtering & Search ───────────────────────────────────────────────────
+  // Mapping data siswa dari API -> bentuk yang dipakai UI
+  const mapSiswa = (item, kelasList) => {
+    const kelas = kelasList.find((k) => k.id === item.kelas_id);
+    return {
+      id: item.id,
+      name: item.nama,
+      nis: item.nis,
+      jenisKelamin: item.jenis_kelamin, // "L" | "P"
+      classId: item.kelas_id,
+      className: kelas ? kelas.nama_kelas : "-",
+    };
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [siswaRes, kelasRes] = await Promise.all([getSiswa(), getKelas()]);
+      const kelasList = kelasRes.data || kelasRes;
+      setClasses(kelasList);
+      const siswaList = siswaRes.data || siswaRes;
+      setStudents(siswaList.map((s) => mapSiswa(s, kelasList)));
+    } catch (err) {
+      console.error(err);
+      showToast("Gagal memuat data siswa dari server.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
   const filteredStudents = useMemo(() => {
     const q = search.toLowerCase().trim();
     return students.filter((s) => {
       const matchesClass =
         selectedClass === "all" || s.className === selectedClass;
       const matchesSearch =
-        !q ||
-        s.name.toLowerCase().includes(q) ||
-        s.nis.toLowerCase().includes(q) ||
-        (s.nisn && s.nisn.toLowerCase().includes(q));
+        !q || s.name.toLowerCase().includes(q) || s.nis.toLowerCase().includes(q);
       return matchesClass && matchesSearch;
     });
   }, [students, search, selectedClass]);
 
-  // ─── Handlers CRUD ────────────────────────────────────────────────────────
-
-  /** Buka dialog Tambah */
   const handleOpenAdd = () => {
     setFormMode("create");
     setEditTarget(null);
     setFormOpen(true);
   };
 
-  /** Buka dialog Edit */
   const handleOpenEdit = (student) => {
     setFormMode("edit");
     setEditTarget(student);
     setFormOpen(true);
   };
 
-  /** Simpan (Tambah atau Edit) */
-  const handleFormSubmit = (formData) => {
-    if (formMode === "create") {
-      // TODO: Replace with POST /api/students
-      const newStudent = {
-        ...formData,
-        id: ++nextTempId,
-        classId: null, // akan diisi oleh API nanti
-      };
-      setStudents((prev) => [newStudent, ...prev]);
-      showToast("Siswa berhasil ditambahkan.");
-    } else {
-      // TODO: Replace with PUT /api/students/{id}
-      setStudents((prev) =>
-        prev.map((s) =>
-          s.id === editTarget.id ? { ...s, ...formData } : s
-        )
-      );
-      showToast("Data siswa berhasil diperbarui.");
+  const handleFormSubmit = async (formData) => {
+    const payload = {
+      nama: formData.name,
+      nis: formData.nis,
+      jenis_kelamin: formData.jenisKelamin,
+      kelas_id: Number(formData.kelasId),
+    };
+
+    try {
+      if (formMode === "create") {
+        await createSiswa(payload);
+        showToast("Siswa berhasil ditambahkan.");
+      } else {
+        await updateSiswa(editTarget.id, payload);
+        showToast("Data siswa berhasil diperbarui.");
+      }
+      setFormOpen(false);
+      setEditTarget(null);
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      const message = err.response?.data?.message || "Gagal menyimpan data siswa.";
+      showToast(message, "error");
     }
-    setFormOpen(false);
-    setEditTarget(null);
   };
 
-  /** Buka konfirmasi Hapus */
   const handleOpenDelete = (student) => {
     setDeleteTarget(student);
     setDeleteOpen(true);
   };
 
-  /** Konfirmasi hapus */
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
-    // TODO: Replace with DELETE /api/students/{id}
-    setStudents((prev) => prev.filter((s) => s.id !== deleteTarget.id));
-    showToast(`Data siswa "${deleteTarget.name}" berhasil dihapus.`);
-    setDeleteOpen(false);
-    setDeleteTarget(null);
+    try {
+      await deleteSiswa(deleteTarget.id);
+      showToast(`Data siswa "${deleteTarget.name}" berhasil dihapus.`);
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      showToast("Gagal menghapus data siswa.", "error");
+    } finally {
+      setDeleteOpen(false);
+      setDeleteTarget(null);
+    }
   };
 
-  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="relative">
-      {/* ── Toast feedback ─────────────────────────────────────────────── */}
       {toast && (
         <div
           className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm font-semibold transition-all duration-300 animate-in slide-in-from-bottom-4 ${
@@ -137,7 +166,6 @@ function Students() {
         </div>
       )}
 
-      {/* ── Page Header ────────────────────────────────────────────────── */}
       <PageHeader
         title="Data Siswa"
         description="Kelola data siswa SMK Muhammadiyah 1 Playen."
@@ -153,9 +181,7 @@ function Students() {
         }
       />
 
-      {/* ── Card Konten Utama ───────────────────────────────────────────── */}
       <div className="bg-card rounded-xl border border-border shadow-xs p-4 sm:p-6 space-y-4">
-        {/* Filter & Search */}
         <StudentFilters
           search={search}
           onSearchChange={setSearch}
@@ -163,26 +189,32 @@ function Students() {
           onClassChange={setSelectedClass}
           filteredCount={filteredStudents.length}
           totalCount={students.length}
+          classes={classes}
         />
 
-        {/* Tabel Siswa */}
-        <StudentsTable
-          students={filteredStudents}
-          onEdit={handleOpenEdit}
-          onDelete={handleOpenDelete}
-        />
+        {loading ? (
+          <div className="flex items-center justify-center py-16 gap-2 text-muted-foreground">
+            <Loader2 className="size-5 animate-spin" />
+            <span>Memuat data siswa...</span>
+          </div>
+        ) : (
+          <StudentsTable
+            students={filteredStudents}
+            onEdit={handleOpenEdit}
+            onDelete={handleOpenDelete}
+          />
+        )}
       </div>
 
-      {/* ── Dialog Form Tambah / Edit ──────────────────────────────────── */}
       <StudentFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}
         mode={formMode}
         student={editTarget}
         onSubmit={handleFormSubmit}
+        classes={classes}
       />
 
-      {/* ── Alert Dialog Konfirmasi Hapus ──────────────────────────────── */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -191,9 +223,7 @@ function Students() {
             </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
               Anda akan menghapus data siswa{" "}
-              <span className="font-semibold text-foreground">
-                {deleteTarget?.name}
-              </span>
+              <span className="font-semibold text-foreground">{deleteTarget?.name}</span>
               . Data siswa yang dihapus tidak dapat dikembalikan.
             </AlertDialogDescription>
           </AlertDialogHeader>

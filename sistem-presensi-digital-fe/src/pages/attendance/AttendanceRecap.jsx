@@ -1,113 +1,52 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import PageHeader from "@/components/common/PageHeader";
 import { useAuth } from "@/context/AuthContext";
-import { masterClasses, masterStudents } from "@/data/dummyStudents";
-import {
-  getDailyRecords,
-  getRangeRecords,
-  calcSummary,
-  aggregateByStudent,
-  getWeekRange,
-  formatWeekLabel,
-  getMonthRange,
-  getYearRange,
-  MONTH_NAMES_ID,
-} from "@/data/dummyAttendance";
+import { getKelas, getSiswaByKelas } from "@/services/siswaService";
+import { getAbsensiHarian, getRekapBulanan, getRekapPeriode } from "@/services/attendanceService";
+import { getWeekRange, getYearRange, formatWeekLabel, MONTH_NAMES_ID } from "@/utils/dateHelpers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Users,
-  UserCheck,
-  UserX,
-  Clock,
-  AlertTriangle,
-  Download,
-  Lock,
-  Calendar,
-  CalendarDays,
-  CalendarRange,
-  CalendarClock,
+  Users, UserCheck, UserX, Clock, AlertTriangle, Download, Lock,
+  Calendar, CalendarDays, CalendarRange, CalendarClock, LoaderCircle,
 } from "lucide-react";
 import { isWaliKelas, isAdmin } from "@/utils/roles";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
-// ─── Period constants ─────────────────────────────────────────────────────────
 const PERIODS = [
-  { id: "daily",   label: "Harian",   Icon: Calendar },
-  { id: "weekly",  label: "Mingguan", Icon: CalendarDays },
-  { id: "monthly", label: "Bulanan",  Icon: CalendarRange },
-  { id: "yearly",  label: "Tahunan",  Icon: CalendarClock },
+  { id: "daily", label: "Harian", Icon: Calendar },
+  { id: "weekly", label: "Mingguan", Icon: CalendarDays },
+  { id: "monthly", label: "Bulanan", Icon: CalendarRange },
+  { id: "yearly", label: "Tahunan", Icon: CalendarClock },
 ];
 
-// ─── Helper: today string ─────────────────────────────────────────────────────
 function todayStr() {
   return new Date().toISOString().split("T")[0];
 }
 
-// ─── Summary Cards ────────────────────────────────────────────────────────────
+function capitalize(s) {
+  if (!s) return null;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 function SummaryCards({ summary }) {
   const cards = [
-    {
-      label: "Total Siswa",
-      value: summary.total,
-      icon: Users,
-      colorClass: "border-border bg-card text-foreground",
-      iconClass: "text-primary",
-      valueClass: "text-foreground",
-    },
-    {
-      label: "Hadir",
-      value: summary.hadir,
-      icon: UserCheck,
-      colorClass: "border-emerald-200 bg-emerald-50/60",
-      iconClass: "text-emerald-600",
-      valueClass: "text-emerald-800",
-    },
-    {
-      label: "Sakit",
-      value: summary.sakit,
-      icon: AlertTriangle,
-      colorClass: "border-amber-200 bg-amber-50/60",
-      iconClass: "text-amber-600",
-      valueClass: "text-amber-800",
-    },
-    {
-      label: "Izin",
-      value: summary.izin,
-      icon: Clock,
-      colorClass: "border-blue-200 bg-blue-50/60",
-      iconClass: "text-blue-600",
-      valueClass: "text-blue-800",
-    },
-    {
-      label: "Alpa",
-      value: summary.alpa,
-      icon: UserX,
-      colorClass: "border-rose-200 bg-rose-50/60",
-      iconClass: "text-rose-600",
-      valueClass: "text-rose-800",
-    },
+    { label: "Total Siswa", value: summary.total, icon: Users, colorClass: "border-border bg-card", iconClass: "text-primary", valueClass: "text-foreground" },
+    { label: "Hadir", value: summary.hadir, icon: UserCheck, colorClass: "border-emerald-200 bg-emerald-50/60", iconClass: "text-emerald-600", valueClass: "text-emerald-800" },
+    { label: "Sakit", value: summary.sakit, icon: AlertTriangle, colorClass: "border-amber-200 bg-amber-50/60", iconClass: "text-amber-600", valueClass: "text-amber-800" },
+    { label: "Izin", value: summary.izin, icon: Clock, colorClass: "border-blue-200 bg-blue-50/60", iconClass: "text-blue-600", valueClass: "text-blue-800" },
+    { label: "Alpa", value: summary.alpa, icon: UserX, colorClass: "border-rose-200 bg-rose-50/60", iconClass: "text-rose-600", valueClass: "text-rose-800" },
   ];
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
       {cards.map(({ label, value, icon: Icon, colorClass, iconClass, valueClass }) => (
-        <div
-          key={label}
-          className={cn("p-4 rounded-xl border shadow-xs text-left", colorClass)}
-        >
+        <div key={label} className={cn("p-4 rounded-xl border shadow-xs text-left", colorClass)}>
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase text-muted-foreground">{label}</span>
             <Icon className={cn("size-4", iconClass)} />
@@ -119,14 +58,14 @@ function SummaryCards({ summary }) {
   );
 }
 
-// ─── Status badge helper ──────────────────────────────────────────────────────
 function StatusBadge({ status }) {
   const map = {
-    Hadir:      "bg-emerald-100 text-emerald-700 border-emerald-200",
-    Sakit:      "bg-amber-100  text-amber-700  border-amber-200",
-    Izin:       "bg-blue-100   text-blue-700   border-blue-200",
-    Alpa:       "bg-rose-100   text-rose-700   border-rose-200",
+    Hadir: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    Sakit: "bg-amber-100 text-amber-700 border-amber-200",
+    Izin: "bg-blue-100 text-blue-700 border-blue-200",
+    Alpa: "bg-rose-100 text-rose-700 border-rose-200",
   };
+  if (!status) return <span className="text-xs text-muted-foreground italic">Belum diinput</span>;
   return (
     <Badge className={cn("text-xs font-bold border hover:bg-inherit", map[status] || "bg-muted text-muted-foreground")}>
       {status}
@@ -134,15 +73,12 @@ function StatusBadge({ status }) {
   );
 }
 
-// ─── Percentage badge ─────────────────────────────────────────────────────────
 function PctBadge({ pct }) {
   const val = parseFloat(pct);
   const cls =
-    val >= 80
-      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-      : val >= 60
-      ? "bg-amber-50 text-amber-700 border-amber-200"
-      : "bg-rose-50 text-rose-700 border-rose-200";
+    val >= 80 ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+    : val >= 60 ? "bg-amber-50 text-amber-700 border-amber-200"
+    : "bg-rose-50 text-rose-700 border-rose-200";
   return (
     <span className={cn("inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border", cls)}>
       {pct}%
@@ -150,13 +86,19 @@ function PctBadge({ pct }) {
   );
 }
 
-// ─── Table: Harian ────────────────────────────────────────────────────────────
-function DailyTable({ records, students }) {
-  const recordMap = useMemo(() => {
+// Tabel Harian — status per sesi (Pagi & Sore terpisah)
+function DailyTable({ pagiRecords, soreRecords, students }) {
+  const pagiMap = useMemo(() => {
     const m = {};
-    for (const r of records) m[r.studentId] = r;
+    pagiRecords.forEach((r) => { m[r.siswa_id] = r; });
     return m;
-  }, [records]);
+  }, [pagiRecords]);
+
+  const soreMap = useMemo(() => {
+    const m = {};
+    soreRecords.forEach((r) => { m[r.siswa_id] = r; });
+    return m;
+  }, [soreRecords]);
 
   return (
     <div className="overflow-x-auto">
@@ -166,8 +108,8 @@ function DailyTable({ records, students }) {
             <TableHead className="w-12 text-center font-bold text-foreground">No.</TableHead>
             <TableHead className="w-28 font-bold text-foreground">NIS</TableHead>
             <TableHead className="min-w-[180px] font-bold text-foreground">Nama Siswa</TableHead>
-            <TableHead className="text-center font-bold text-foreground">Status Kehadiran</TableHead>
-            <TableHead className="font-bold text-foreground">Keterangan</TableHead>
+            <TableHead className="text-center font-bold text-foreground">Sesi Pagi</TableHead>
+            <TableHead className="text-center font-bold text-foreground">Sesi Sore</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -179,18 +121,15 @@ function DailyTable({ records, students }) {
             </TableRow>
           ) : (
             students.map((s, idx) => {
-              const rec = recordMap[s.id];
+              const pagi = pagiMap[s.id];
+              const sore = soreMap[s.id];
               return (
                 <TableRow key={s.id} className="hover:bg-muted/20">
                   <TableCell className="text-center text-muted-foreground font-medium py-3">{idx + 1}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground py-3">{s.nis}</TableCell>
                   <TableCell className="font-semibold text-foreground py-3 text-left">{s.name}</TableCell>
-                  <TableCell className="text-center py-3">
-                    {rec ? <StatusBadge status={rec.status} /> : <span className="text-xs text-muted-foreground italic">Tidak ada data</span>}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground py-3">
-                    {rec?.note || <span className="italic text-xs">—</span>}
-                  </TableCell>
+                  <TableCell className="text-center py-3"><StatusBadge status={capitalize(pagi?.status)} /></TableCell>
+                  <TableCell className="text-center py-3"><StatusBadge status={capitalize(sore?.status)} /></TableCell>
                 </TableRow>
               );
             })
@@ -201,14 +140,15 @@ function DailyTable({ records, students }) {
   );
 }
 
-// ─── Table: Akumulasi (Mingguan / Bulanan / Tahunan) ─────────────────────────
-function AggregateTable({ records, students }) {
+// Tabel Akumulasi (Mingguan / Bulanan / Tahunan) — dari data rekap backend
+function AggregateTable({ rekapData, students }) {
   const aggMap = useMemo(() => {
-    const byStudent = aggregateByStudent(records);
     const m = {};
-    for (const d of byStudent) m[d.studentId] = d;
+    rekapData.forEach((d) => {
+      if (d.siswa) m[d.siswa.id] = d;
+    });
     return m;
-  }, [records]);
+  }, [rekapData]);
 
   return (
     <div className="overflow-x-auto">
@@ -234,17 +174,24 @@ function AggregateTable({ records, students }) {
             </TableRow>
           ) : (
             students.map((s, idx) => {
-              const d = aggMap[s.id] || { hadir: 0, sakit: 0, izin: 0, alpa: 0, pct: "0.0" };
+              const d = aggMap[s.id];
+              const hadir = d?.hadir || 0;
+              const sakit = d?.sakit || 0;
+              const izin = d?.izin || 0;
+              const alpa = d?.alpa || 0;
+              const total = d?.total || 0;
+              const pct = total > 0 ? ((hadir / total) * 100).toFixed(1) : "0.0";
+
               return (
                 <TableRow key={s.id} className="hover:bg-muted/20">
                   <TableCell className="text-center text-muted-foreground font-medium py-3">{idx + 1}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground py-3">{s.nis}</TableCell>
                   <TableCell className="font-semibold text-foreground py-3 text-left">{s.name}</TableCell>
-                  <TableCell className="text-center font-bold text-emerald-700 py-3">{d.hadir}</TableCell>
-                  <TableCell className="text-center font-bold text-amber-700 py-3">{d.sakit}</TableCell>
-                  <TableCell className="text-center font-bold text-blue-700 py-3">{d.izin}</TableCell>
-                  <TableCell className="text-center font-bold text-rose-700 py-3">{d.alpa}</TableCell>
-                  <TableCell className="text-center py-3"><PctBadge pct={d.pct} /></TableCell>
+                  <TableCell className="text-center font-bold text-emerald-700 py-3">{hadir}</TableCell>
+                  <TableCell className="text-center font-bold text-amber-700 py-3">{sakit}</TableCell>
+                  <TableCell className="text-center font-bold text-blue-700 py-3">{izin}</TableCell>
+                  <TableCell className="text-center font-bold text-rose-700 py-3">{alpa}</TableCell>
+                  <TableCell className="text-center py-3"><PctBadge pct={pct} /></TableCell>
                 </TableRow>
               );
             })
@@ -255,82 +202,147 @@ function AggregateTable({ records, students }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 function AttendanceRecap() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const userIsWali  = isWaliKelas(user?.role);
+  const userIsWali = isWaliKelas(user?.role);
   const userIsAdmin = isAdmin(user?.role);
 
-  // ── Determine initial class ──────────────────────────────────────────────
-  const initialClassId = useMemo(() => {
-    if (userIsWali && user?.assignedClass) {
-      const found = masterClasses.find(
-        (c) => c.name.toLowerCase() === user.assignedClass.toLowerCase()
-      );
-      if (found) return String(found.id);
-    }
-    return "1";
-  }, [user, userIsWali]);
+  const [classes, setClasses] = useState([]);
+  const [loadingClasses, setLoadingClasses] = useState(true);
+  const [selectedClassId, setSelectedClassId] = useState("");
 
-  const [selectedClassId, setSelectedClassId] = useState(initialClassId);
+  const [students, setStudents] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+
   const [activePeriod, setActivePeriod] = useState("daily");
-
-  // ── Period-specific filter state ─────────────────────────────────────────
-  const [dailyDate,    setDailyDate]    = useState(todayStr);
-  const [weeklyRef,    setWeeklyRef]    = useState(todayStr);   // any date in the target week
+  const [dailyDate, setDailyDate] = useState(todayStr);
+  const [weeklyRef, setWeeklyRef] = useState(todayStr);
   const [monthlyMonth, setMonthlyMonth] = useState(new Date().getMonth() + 1);
-  const [monthlyYear,  setMonthlyYear]  = useState(new Date().getFullYear());
-  const [yearlyYear,   setYearlyYear]   = useState(new Date().getFullYear());
+  const [monthlyYear, setMonthlyYear] = useState(new Date().getFullYear());
+  const [yearlyYear, setYearlyYear] = useState(new Date().getFullYear());
 
-  // ── Derived: current class & students ───────────────────────────────────
-  const currentClass = useMemo(
-    () => masterClasses.find((c) => String(c.id) === String(selectedClassId)) || masterClasses[0],
-    [selectedClassId]
-  );
+  const [loadingData, setLoadingData] = useState(false);
+  const [dailyPagi, setDailyPagi] = useState([]);
+  const [dailySore, setDailySore] = useState([]);
+  const [rekapData, setRekapData] = useState([]);
+  const [periodLabel, setPeriodLabel] = useState("");
 
-  const students = useMemo(
-    () => masterStudents.filter((s) => String(s.classId) === String(selectedClassId)),
-    [selectedClassId]
-  );
+  // Load daftar kelas
+  useEffect(() => {
+    setLoadingClasses(true);
+    getKelas()
+      .then((res) => {
+        const list = res.data || res;
+        setClasses(list);
+        if (userIsWali && user?.classId) {
+          setSelectedClassId(String(user.classId));
+        } else if (list.length > 0) {
+          setSelectedClassId(String(list[0].id));
+        }
+      })
+      .catch((err) => console.error(err))
+      .finally(() => setLoadingClasses(false));
+  }, [userIsWali, user?.classId]);
 
-  // ── Derived: records & summary for each period ───────────────────────────
-  const { records, summary, periodLabel } = useMemo(() => {
-    let recs = [];
-    let label = "";
+  const currentClass = useMemo(() => {
+    const found = classes.find((c) => String(c.id) === String(selectedClassId));
+    return found ? { id: found.id, name: found.nama_kelas } : { id: selectedClassId, name: "-" };
+  }, [classes, selectedClassId]);
+
+  // Load daftar siswa tiap kelas berubah
+  useEffect(() => {
+    if (!selectedClassId) return;
+    setLoadingStudents(true);
+    getSiswaByKelas(selectedClassId)
+      .then((res) => {
+        const list = res.data || res;
+        setStudents(list.map((s) => ({ id: s.id, nis: s.nis, name: s.nama })));
+      })
+      .catch((err) => {
+        console.error(err);
+        setStudents([]);
+      })
+      .finally(() => setLoadingStudents(false));
+  }, [selectedClassId]);
+
+  // Load data rekap sesuai periode aktif
+  useEffect(() => {
+    if (!selectedClassId) return;
+    setLoadingData(true);
+
+    const run = async () => {
+      try {
+        if (activePeriod === "daily") {
+          const { pagi, sore } = await getAbsensiHarian(selectedClassId, dailyDate);
+          setDailyPagi(pagi);
+          setDailySore(sore);
+          const d = new Date(dailyDate);
+          setPeriodLabel(d.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
+        } else if (activePeriod === "weekly") {
+          const { from, to } = getWeekRange(weeklyRef);
+          const data = await getRekapPeriode({ kelas_id: selectedClassId, dari: from, sampai: to });
+          setRekapData(data.data || data);
+          setPeriodLabel(`Minggu: ${formatWeekLabel(from, to)}`);
+        } else if (activePeriod === "monthly") {
+          const data = await getRekapBulanan({ kelas_id: selectedClassId, bulan: monthlyMonth, tahun: monthlyYear });
+          setRekapData(data.data || data);
+          setPeriodLabel(`${MONTH_NAMES_ID[monthlyMonth - 1]} ${monthlyYear}`);
+        } else {
+          const { from, to } = getYearRange(yearlyYear);
+          const data = await getRekapPeriode({ kelas_id: selectedClassId, dari: from, sampai: to });
+          setRekapData(data.data || data);
+          setPeriodLabel(`Tahun ${yearlyYear}`);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    run();
+  }, [activePeriod, selectedClassId, dailyDate, weeklyRef, monthlyMonth, monthlyYear, yearlyYear]);
+
+  // Ringkasan kartu atas
+  const summary = useMemo(() => {
+    const total = students.length;
 
     if (activePeriod === "daily") {
-      recs  = getDailyRecords(selectedClassId, dailyDate);
-      const d = new Date(dailyDate);
-      label = d.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-    } else if (activePeriod === "weekly") {
-      const { from, to } = getWeekRange(weeklyRef);
-      recs  = getRangeRecords(selectedClassId, from, to);
-      label = `Minggu: ${formatWeekLabel(from, to)}`;
-    } else if (activePeriod === "monthly") {
-      const { from, to } = getMonthRange(monthlyYear, monthlyMonth);
-      recs  = getRangeRecords(selectedClassId, from, to);
-      label = `${MONTH_NAMES_ID[monthlyMonth - 1]} ${monthlyYear}`;
-    } else {
-      // yearly
-      const { from, to } = getYearRange(yearlyYear);
-      recs  = getRangeRecords(selectedClassId, from, to);
-      label = `Tahun ${yearlyYear}`;
+      let hadir = 0, sakit = 0, izin = 0, alpa = 0;
+      const combined = [...dailyPagi, ...dailySore];
+      combined.forEach((r) => {
+        if (r.status === "hadir") hadir++;
+        else if (r.status === "sakit") sakit++;
+        else if (r.status === "izin") izin++;
+        else if (r.status === "alpa") alpa++;
+      });
+      return { total, hadir, sakit, izin, alpa };
     }
 
-    return {
-      records: recs,
-      summary: calcSummary(recs, students.length),
-      periodLabel: label,
-    };
-  }, [activePeriod, selectedClassId, dailyDate, weeklyRef, monthlyMonth, monthlyYear, yearlyYear, students.length]);
+    let hadir = 0, sakit = 0, izin = 0, alpa = 0;
+    rekapData.forEach((d) => {
+      hadir += d.hadir || 0;
+      sakit += d.sakit || 0;
+      izin += d.izin || 0;
+      alpa += d.alpa || 0;
+    });
+    return { total, hadir, sakit, izin, alpa };
+  }, [activePeriod, students, dailyPagi, dailySore, rekapData]);
 
-  // ── Available years for select ───────────────────────────────────────────
   const years = [2025, 2026, 2027];
+
+  if (loadingClasses) {
+    return (
+      <div className="flex items-center justify-center py-24 gap-2 text-muted-foreground">
+        <LoaderCircle className="size-5 animate-spin" />
+        <span>Memuat data kelas...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-12">
-      {/* ── 1. Page Header ────────────────────────────────────────────── */}
       <PageHeader
         title="Rekap Absensi"
         description="Lihat ringkasan dan riwayat kehadiran siswa berdasarkan periode."
@@ -345,7 +357,6 @@ function AttendanceRecap() {
         }
       />
 
-      {/* ── 2. Period Selector (Segmented Buttons) ─────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide shrink-0">
           Pilih Periode
@@ -370,12 +381,9 @@ function AttendanceRecap() {
         </div>
       </div>
 
-      {/* ── 3. Filter Card ─────────────────────────────────────────────── */}
       <Card className="shadow-xs border-border text-left">
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
-
-            {/* Pilih Kelas */}
             <div className="space-y-1.5 min-w-[200px]">
               <Label className="text-xs font-semibold text-foreground">Pilih Kelas</Label>
               {userIsWali ? (
@@ -394,16 +402,13 @@ function AttendanceRecap() {
                   onChange={(e) => setSelectedClassId(e.target.value)}
                   className="w-full h-10 px-3.5 rounded-lg border border-border bg-card text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
                 >
-                  {masterClasses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      Kelas {c.name} ({c.grade})
-                    </option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>Kelas {c.nama_kelas}</option>
                   ))}
                 </select>
               )}
             </div>
 
-            {/* ── Filter Harian: pilih tanggal ── */}
             {activePeriod === "daily" && (
               <div className="space-y-1.5">
                 <Label htmlFor="recap-date" className="text-xs font-semibold text-foreground">Tanggal</Label>
@@ -420,7 +425,6 @@ function AttendanceRecap() {
               </div>
             )}
 
-            {/* ── Filter Mingguan: tanggal acuan ── */}
             {activePeriod === "weekly" && (
               <div className="space-y-1.5">
                 <Label htmlFor="recap-week-ref" className="text-xs font-semibold text-foreground">
@@ -436,13 +440,9 @@ function AttendanceRecap() {
                     className="pl-9 font-semibold text-sm w-auto"
                   />
                 </div>
-                <p className="text-[11px] text-muted-foreground font-medium">
-                  {formatWeekLabel(...Object.values(getWeekRange(weeklyRef)))}
-                </p>
               </div>
             )}
 
-            {/* ── Filter Bulanan: bulan + tahun ── */}
             {activePeriod === "monthly" && (
               <div className="flex gap-2 flex-wrap">
                 <div className="space-y-1.5">
@@ -472,7 +472,6 @@ function AttendanceRecap() {
               </div>
             )}
 
-            {/* ── Filter Tahunan: tahun ── */}
             {activePeriod === "yearly" && (
               <div className="space-y-1.5">
                 <Label htmlFor="recap-year" className="text-xs font-semibold text-foreground">Tahun</Label>
@@ -486,15 +485,12 @@ function AttendanceRecap() {
                 </select>
               </div>
             )}
-
           </div>
         </CardContent>
       </Card>
 
-      {/* ── 4. Summary Cards ───────────────────────────────────────────── */}
       <SummaryCards summary={summary} />
 
-      {/* ── 5. Recap Table ─────────────────────────────────────────────── */}
       <Card className="shadow-xs border-border">
         <CardHeader className="pb-3 border-b border-border/50 text-left">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -505,10 +501,15 @@ function AttendanceRecap() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {activePeriod === "daily" ? (
-            <DailyTable records={records} students={students} />
+          {loadingData || loadingStudents ? (
+            <div className="flex items-center justify-center py-16 gap-2 text-muted-foreground">
+              <LoaderCircle className="size-5 animate-spin" />
+              <span>Memuat data rekap...</span>
+            </div>
+          ) : activePeriod === "daily" ? (
+            <DailyTable pagiRecords={dailyPagi} soreRecords={dailySore} students={students} />
           ) : (
-            <AggregateTable records={records} students={students} />
+            <AggregateTable rekapData={rekapData} students={students} />
           )}
         </CardContent>
       </Card>

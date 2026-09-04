@@ -1,17 +1,23 @@
 import React, { createContext, useContext, useState } from "react";
-import { mockUsers } from "@/data/mockUsers";
+import api, { TOKEN_KEY } from "@/services/api";
+import { ROLES } from "@/utils/roles";
 
 const AuthContext = createContext(null);
 
 const STORAGE_KEY = "presensi_user_session";
 
 /**
- * AUTH CONTEXT PROVIDER (TEMPORARY MOCK AUTHENTICATION)
- * 
- * Mengelola state otentikasi di Front-End dan menyimpan sesi tanpa password di localStorage.
- * Nanti saat backend Laravel siap, fungsi login/logout di sini tinggal disesuaikan
- * untuk memanggil API REST (Axios) dan mengelola Token Bearer / Sanctum.
+ * Mapping role dari backend Laravel (lowercase, snake_case)
+ * ke konstanta role Front-End (uppercase).
  */
+function mapBackendRole(backendRole) {
+  const role = String(backendRole || "").toLowerCase();
+  if (role === "admin") return ROLES.ADMIN;
+  if (role === "wali_kelas") return ROLES.GURU_WALI_KELAS;
+  if (role === "guru_mapel") return ROLES.GURU_MAPEL;
+  return backendRole;
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
@@ -28,49 +34,43 @@ export function AuthProvider({ children }) {
 
   const isAuthenticated = Boolean(user);
 
-  const login = (username, password) => {
-    const sanitizedUsername = (username || "").trim().toLowerCase();
-    const sanitizedPassword = (password || "").trim();
+  const login = async (username, password) => {
+    try {
+      const res = await api.post("/login", { username, password });
+      const { token, user: backendUser } = res.data;
 
-    const foundUser = mockUsers.find(
-      (u) => u.username.toLowerCase() === sanitizedUsername && u.password === sanitizedPassword
-    );
-
-    if (foundUser) {
-      // Data user aman tanpa password untuk disimpan di state & localStorage
       const safeUserData = {
-        id: foundUser.id,
-        username: foundUser.username,
-        name: foundUser.name,
-        role: foundUser.role,
-        classId: foundUser.classId || null,
-        assignedClass: foundUser.assignedClass || foundUser.className || null,
-        className: foundUser.className || foundUser.assignedClass || null,
-        email: foundUser.email || `${foundUser.username}@smkm1playen.sch.id`,
+        id: backendUser.id,
+        username: backendUser.username,
+        name: backendUser.nama,
+        role: mapBackendRole(backendUser.role),
+        classId: backendUser.kelas_id || null,
+        assignedClass: null,
+        className: null,
+        email: `${backendUser.username}@smkm1playen.sch.id`,
       };
 
       setUser(safeUserData);
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(safeUserData));
-      } catch (e) {
-        console.error("Gagal menyimpan sesi ke localStorage:", e);
-      }
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(safeUserData));
 
       return { success: true, user: safeUserData };
+    } catch (error) {
+      const message =
+        error.response?.data?.message || "Username atau password tidak sesuai.";
+      return { success: false, message };
     }
-
-    return {
-      success: false,
-      message: "Username atau password tidak sesuai.",
-    };
   };
 
-  const logout = () => {
-    setUser(null);
+  const logout = async () => {
     try {
+      await api.post("/logout");
+    } catch (error) {
+      console.error("Gagal logout di server:", error);
+    } finally {
+      setUser(null);
+      localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(STORAGE_KEY);
-    } catch (e) {
-      console.error("Gagal menghapus sesi dari localStorage:", e);
     }
   };
 

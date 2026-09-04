@@ -17,35 +17,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { masterClasses } from "@/data/dummyStudents";
 
 const EMPTY_FORM = {
   name: "",
   nis: "",
-  nisn: "",
-  className: "",
-  status: "",
+  jenisKelamin: "",
+  kelasId: "",
 };
 
 /**
- * Reusable dialog untuk Tambah dan Edit data siswa.
- * mode: "create" | "edit"
- * student: objek siswa yang akan diedit (opsional, hanya saat mode "edit")
+ * classes: [{ id, nama_kelas }] — dari API GET /api/kelas
  */
-function StudentFormDialog({ open, onOpenChange, mode = "create", student = null, onSubmit }) {
+function StudentFormDialog({ open, onOpenChange, mode = "create", student = null, onSubmit, classes = [] }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
 
-  // Saat dialog dibuka, isi form sesuai mode
   useEffect(() => {
     if (open) {
       if (mode === "edit" && student) {
         setForm({
           name: student.name || "",
           nis: student.nis || "",
-          nisn: student.nisn || "",
-          className: student.className || "",
-          status: student.status || "",
+          jenisKelamin: student.jenisKelamin || "",
+          kelasId: student.classId ? String(student.classId) : "",
         });
       } else {
         setForm(EMPTY_FORM);
@@ -65,9 +59,8 @@ function StudentFormDialog({ open, onOpenChange, mode = "create", student = null
     const newErrors = {};
     if (!form.name.trim()) newErrors.name = "Nama siswa wajib diisi.";
     if (!form.nis.trim()) newErrors.nis = "NIS wajib diisi.";
-    if (!form.nisn.trim()) newErrors.nisn = "NISN wajib diisi.";
-    if (!form.className) newErrors.className = "Kelas wajib dipilih.";
-    if (!form.status) newErrors.status = "Status wajib dipilih.";
+    if (!form.jenisKelamin) newErrors.jenisKelamin = "Jenis kelamin wajib dipilih.";
+    if (!form.kelasId) newErrors.kelasId = "Kelas wajib dipilih.";
     return newErrors;
   };
 
@@ -83,9 +76,7 @@ function StudentFormDialog({ open, onOpenChange, mode = "create", student = null
 
   const title = mode === "edit" ? "Edit Data Siswa" : "Tambah Siswa";
   const description =
-    mode === "edit"
-      ? "Perbarui data siswa yang sudah terdaftar."
-      : "Masukkan data siswa yang akan ditambahkan.";
+    mode === "edit" ? "Perbarui data siswa yang sudah terdaftar." : "Masukkan data siswa yang akan ditambahkan.";
   const submitLabel = mode === "edit" ? "Simpan Perubahan" : "Simpan Siswa";
 
   return (
@@ -93,9 +84,7 @@ function StudentFormDialog({ open, onOpenChange, mode = "create", student = null
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-foreground">{title}</DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
-            {description}
-          </DialogDescription>
+          <DialogDescription className="text-sm text-muted-foreground">{description}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} noValidate>
@@ -112,9 +101,7 @@ function StudentFormDialog({ open, onOpenChange, mode = "create", student = null
                 onChange={(e) => handleChange("name", e.target.value)}
                 className={errors.name ? "border-destructive focus-visible:ring-destructive/30" : ""}
               />
-              {errors.name && (
-                <p className="text-xs text-destructive font-medium">{errors.name}</p>
-              )}
+              {errors.name && <p className="text-xs text-destructive font-medium">{errors.name}</p>}
             </div>
 
             {/* NIS */}
@@ -124,30 +111,30 @@ function StudentFormDialog({ open, onOpenChange, mode = "create", student = null
               </Label>
               <Input
                 id="student-nis"
-                placeholder="Contoh: 2026010101"
+                placeholder="Contoh: 2026001"
                 value={form.nis}
                 onChange={(e) => handleChange("nis", e.target.value)}
                 className={errors.nis ? "border-destructive focus-visible:ring-destructive/30" : ""}
               />
-              {errors.nis && (
-                <p className="text-xs text-destructive font-medium">{errors.nis}</p>
-              )}
+              {errors.nis && <p className="text-xs text-destructive font-medium">{errors.nis}</p>}
             </div>
 
-            {/* NISN */}
+            {/* Jenis Kelamin */}
             <div className="grid gap-1.5">
-              <Label htmlFor="student-nisn" className="font-semibold text-foreground">
-                NISN <span className="text-destructive">*</span>
+              <Label htmlFor="student-gender" className="font-semibold text-foreground">
+                Jenis Kelamin <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="student-nisn"
-                placeholder="Contoh: 0061234567"
-                value={form.nisn}
-                onChange={(e) => handleChange("nisn", e.target.value)}
-                className={errors.nisn ? "border-destructive focus-visible:ring-destructive/30" : ""}
-              />
-              {errors.nisn && (
-                <p className="text-xs text-destructive font-medium">{errors.nisn}</p>
+              <Select value={form.jenisKelamin} onValueChange={(val) => handleChange("jenisKelamin", val)}>
+                <SelectTrigger id="student-gender" className={errors.jenisKelamin ? "border-destructive" : ""}>
+                  <SelectValue placeholder="Pilih jenis kelamin..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="L">Laki-laki</SelectItem>
+                  <SelectItem value="P">Perempuan</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.jenisKelamin && (
+                <p className="text-xs text-destructive font-medium">{errors.jenisKelamin}</p>
               )}
             </div>
 
@@ -156,52 +143,19 @@ function StudentFormDialog({ open, onOpenChange, mode = "create", student = null
               <Label htmlFor="student-class" className="font-semibold text-foreground">
                 Kelas <span className="text-destructive">*</span>
               </Label>
-              <Select
-                value={form.className}
-                onValueChange={(val) => handleChange("className", val)}
-              >
-                <SelectTrigger
-                  id="student-class"
-                  className={errors.className ? "border-destructive" : ""}
-                >
+              <Select value={form.kelasId} onValueChange={(val) => handleChange("kelasId", val)}>
+                <SelectTrigger id="student-class" className={errors.kelasId ? "border-destructive" : ""}>
                   <SelectValue placeholder="Pilih kelas..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {masterClasses.map((cls) => (
-                    <SelectItem key={cls.id} value={cls.name}>
-                      {cls.name}
+                  {classes.map((cls) => (
+                    <SelectItem key={cls.id} value={String(cls.id)}>
+                      {cls.nama_kelas}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {errors.className && (
-                <p className="text-xs text-destructive font-medium">{errors.className}</p>
-              )}
-            </div>
-
-            {/* Status */}
-            <div className="grid gap-1.5">
-              <Label htmlFor="student-status" className="font-semibold text-foreground">
-                Status <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={form.status}
-                onValueChange={(val) => handleChange("status", val)}
-              >
-                <SelectTrigger
-                  id="student-status"
-                  className={errors.status ? "border-destructive" : ""}
-                >
-                  <SelectValue placeholder="Pilih status..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Aktif">Aktif</SelectItem>
-                  <SelectItem value="Tidak Aktif">Tidak Aktif</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.status && (
-                <p className="text-xs text-destructive font-medium">{errors.status}</p>
-              )}
+              {errors.kelasId && <p className="text-xs text-destructive font-medium">{errors.kelasId}</p>}
             </div>
           </div>
 

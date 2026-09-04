@@ -17,57 +17,74 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { masterClasses } from "@/data/dummyStudents";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { ROLES, ROLE_LABELS } from "@/utils/roles";
 
 const EMPTY_FORM = {
-  name: "",
-  nip: "",
+  nama: "",
   username: "",
+  password: "",
   role: "",
-  assignedClass: "",
-  status: "",
+  kelas_id: "",
 };
 
+// Mapping role FE (uppercase) -> format yang diterima backend Laravel (lowercase)
+function mapRoleToBackend(role) {
+  if (role === ROLES.ADMIN) return "admin";
+  if (role === ROLES.GURU_WALI_KELAS) return "wali_kelas";
+  if (role === ROLES.GURU_MAPEL) return "guru_mapel";
+  return role;
+}
+
 /**
- * Reusable Dialog Form untuk Tambah & Edit Data Guru.
+ * Dialog Form untuk Tambah & Edit Data User/Guru.
+ *
+ * Props:
+ *  - open, onOpenChange   : kontrol buka/tutup dialog
+ *  - mode                 : "create" | "edit"
+ *  - teacher              : data guru yang sedang di-edit (null saat create)
+ *  - classes              : [{id, nama_kelas}] dari GET /api/kelas
+ *  - onSubmit(formData)   : async handler di parent — lempar error untuk ditangkap di sini
+ *  - submitting           : boolean loading state dari parent
  */
 function TeacherFormDialog({
   open,
   onOpenChange,
   mode = "create",
   teacher = null,
-  teachersList = [],
+  classes = [],
   onSubmit,
+  submitting = false,
 }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Sync modal open/close & mode
+  // Sync form saat dialog dibuka
   useEffect(() => {
     if (open) {
       if (mode === "edit" && teacher) {
         setForm({
-          name: teacher.name || "",
-          nip: teacher.nip || "",
+          nama: teacher.nama || "",
           username: teacher.username || "",
+          password: "", // password tidak di-prefill; kosong = tidak diubah
           role: teacher.role || "",
-          assignedClass: teacher.assignedClass || "",
-          status: teacher.status || "",
+          kelas_id: teacher.kelas_id ? String(teacher.kelas_id) : "",
         });
       } else {
         setForm(EMPTY_FORM);
       }
       setErrors({});
+      setShowPassword(false);
     }
   }, [open, mode, teacher]);
 
   const handleChange = (field, value) => {
     setForm((prev) => {
       const updated = { ...prev, [field]: value };
-      // Reset assignedClass jika role diubah dari GURU_WALI_KELAS ke role lain
+      // Reset kelas_id jika role diubah bukan ke wali_kelas
       if (field === "role" && value !== ROLES.GURU_WALI_KELAS) {
-        updated.assignedClass = "";
+        updated.kelas_id = "";
       }
       return updated;
     });
@@ -80,43 +97,25 @@ function TeacherFormDialog({
   const validate = () => {
     const newErrors = {};
 
-    // Wajib diisi
-    if (!form.name.trim()) newErrors.name = "Nama guru wajib diisi.";
-    if (!form.nip.trim()) newErrors.nip = "NIP wajib diisi.";
+    if (!form.nama.trim()) newErrors.nama = "Nama wajib diisi.";
     if (!form.username.trim()) newErrors.username = "Username wajib diisi.";
-    if (!form.role) newErrors.role = "Role / Peran wajib dipilih.";
-    if (!form.status) newErrors.status = "Status wajib dipilih.";
 
-    if (form.role === ROLES.GURU_WALI_KELAS && !form.assignedClass) {
-      newErrors.assignedClass = "Kelas Wali wajib dipilih.";
+    // Password wajib saat create; opsional saat edit
+    if (mode === "create" && !form.password) {
+      newErrors.password = "Password wajib diisi saat menambah user baru.";
     }
 
-    // Validasi NIP & Username Duplikat
-    const cleanUsername = form.username.trim().toLowerCase();
-    const cleanNip = form.nip.trim();
+    if (!form.role) newErrors.role = "Peran / Role wajib dipilih.";
 
-    const isDuplicateUsername = teachersList.some((t) => {
-      if (mode === "edit" && teacher && t.id === teacher.id) return false;
-      return t.username.toLowerCase() === cleanUsername;
-    });
-
-    const isDuplicateNip = teachersList.some((t) => {
-      if (mode === "edit" && teacher && t.id === teacher.id) return false;
-      return t.nip === cleanNip;
-    });
-
-    if (isDuplicateUsername) {
-      newErrors.username = "Username sudah digunakan oleh guru lain.";
-    }
-
-    if (isDuplicateNip) {
-      newErrors.nip = "NIP sudah terdaftar untuk guru lain.";
+    // kelas_id wajib saat role = wali_kelas
+    if (form.role === ROLES.GURU_WALI_KELAS && !form.kelas_id) {
+      newErrors.kelas_id = "Kelas wajib dipilih untuk Wali Kelas.";
     }
 
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
@@ -124,41 +123,42 @@ function TeacherFormDialog({
       return;
     }
 
-    // Ubah string kosong pada assignedClass menjadi null jika bukan wali kelas
+    // Bangun payload sesuai API backend (role dikonversi ke format lowercase backend)
     const payload = {
-      ...form,
-      assignedClass: form.role === ROLES.GURU_WALI_KELAS ? form.assignedClass : null,
+      nama: form.nama.trim(),
+      username: form.username.trim(),
+      role: mapRoleToBackend(form.role),
+      kelas_id:
+        form.role === ROLES.GURU_WALI_KELAS
+          ? Number(form.kelas_id)
+          : null,
     };
 
-    onSubmit(payload);
+    // Password hanya dikirim jika diisi
+    if (form.password) {
+      payload.password = form.password;
+    }
+
+    // onSubmit adalah async di parent; error ditangkap di sana
+    await onSubmit(payload);
   };
 
-  // Saring kelas yang sudah di-assign ke guru wali kelas lain agar tidak terjadi tabrakan wali kelas.
-  // CATATAN INTEGRASI BACKEND: Validasi final keunikan kelas wali harus divalidasi juga di backend Laravel.
-  const availableClasses = masterClasses.filter((cls) => {
-    // Jika di mode edit dan kelas ini adalah kelas guru yang sedang di-edit, ijinkan
-    if (mode === "edit" && teacher && teacher.assignedClass === cls.name) {
-      return true;
-    }
-    // Cek apakah ada guru lain (berstatus aktif/tidak aktif) yang sudah memegang kelas ini
-    const isAssigned = teachersList.some(
-      (t) => t.role === ROLES.GURU_WALI_KELAS && t.assignedClass === cls.name
-    );
-    return !isAssigned;
-  });
+  const isWaliKelas = form.role === ROLES.GURU_WALI_KELAS;
 
   const title = mode === "edit" ? "Edit Data Guru" : "Tambah Guru";
   const description =
     mode === "edit"
       ? "Perbarui informasi profil dan peran guru terpilih."
-      : "Masukkan data guru baru ke dalam sistem master.";
+      : "Masukkan data guru baru ke dalam sistem.";
   const submitLabel = mode === "edit" ? "Simpan Perubahan" : "Simpan Guru";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle className="text-lg font-bold text-foreground">{title}</DialogTitle>
+          <DialogTitle className="text-lg font-bold text-foreground">
+            {title}
+          </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
             {description}
           </DialogDescription>
@@ -166,37 +166,21 @@ function TeacherFormDialog({
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="grid gap-4 py-2 text-left">
-            {/* Nama Guru */}
+            {/* Nama */}
             <div className="grid gap-1.5">
-              <Label htmlFor="teacher-name" className="font-semibold text-foreground">
-                Nama Lengkap & Gelar <span className="text-destructive">*</span>
+              <Label htmlFor="teacher-nama" className="font-semibold text-foreground">
+                Nama Lengkap <span className="text-destructive">*</span>
               </Label>
               <Input
-                id="teacher-name"
+                id="teacher-nama"
                 placeholder="Contoh: Ahmad Santoso, S.Pd."
-                value={form.name}
-                onChange={(e) => handleChange("name", e.target.value)}
-                className={errors.name ? "border-destructive focus-visible:ring-destructive/30" : ""}
+                value={form.nama}
+                onChange={(e) => handleChange("nama", e.target.value)}
+                className={errors.nama ? "border-destructive focus-visible:ring-destructive/30" : ""}
+                disabled={submitting}
               />
-              {errors.name && (
-                <p className="text-xs text-destructive font-medium">{errors.name}</p>
-              )}
-            </div>
-
-            {/* NIP */}
-            <div className="grid gap-1.5">
-              <Label htmlFor="teacher-nip" className="font-semibold text-foreground">
-                NIP <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="teacher-nip"
-                placeholder="Contoh: 19850101XXXXXXXXXX"
-                value={form.nip}
-                onChange={(e) => handleChange("nip", e.target.value)}
-                className={errors.nip ? "border-destructive focus-visible:ring-destructive/30" : ""}
-              />
-              {errors.nip && (
-                <p className="text-xs text-destructive font-medium">{errors.nip}</p>
+              {errors.nama && (
+                <p className="text-xs text-destructive font-medium">{errors.nama}</p>
               )}
             </div>
 
@@ -211,9 +195,49 @@ function TeacherFormDialog({
                 value={form.username}
                 onChange={(e) => handleChange("username", e.target.value)}
                 className={errors.username ? "border-destructive focus-visible:ring-destructive/30" : ""}
+                disabled={submitting}
               />
               {errors.username && (
                 <p className="text-xs text-destructive font-medium">{errors.username}</p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="grid gap-1.5">
+              <Label htmlFor="teacher-password" className="font-semibold text-foreground">
+                Password{" "}
+                {mode === "create" ? (
+                  <span className="text-destructive">*</span>
+                ) : (
+                  <span className="text-muted-foreground font-normal text-xs">
+                    (kosongkan jika tidak ingin mengubah)
+                  </span>
+                )}
+              </Label>
+              <div className="relative">
+                <Input
+                  id="teacher-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder={
+                    mode === "edit" ? "Kosongkan jika tidak diubah" : "Masukkan password"
+                  }
+                  value={form.password}
+                  onChange={(e) => handleChange("password", e.target.value)}
+                  className={`pr-10 ${errors.password ? "border-destructive focus-visible:ring-destructive/30" : ""}`}
+                  disabled={submitting}
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                >
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-xs text-destructive font-medium">{errors.password}</p>
               )}
             </div>
 
@@ -225,6 +249,7 @@ function TeacherFormDialog({
               <Select
                 value={form.role}
                 onValueChange={(val) => handleChange("role", val)}
+                disabled={submitting}
               >
                 <SelectTrigger
                   id="teacher-role"
@@ -234,8 +259,12 @@ function TeacherFormDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ROLES.ADMIN}>{ROLE_LABELS[ROLES.ADMIN]}</SelectItem>
-                  <SelectItem value={ROLES.GURU_WALI_KELAS}>{ROLE_LABELS[ROLES.GURU_WALI_KELAS]}</SelectItem>
-                  <SelectItem value={ROLES.GURU_MAPEL}>{ROLE_LABELS[ROLES.GURU_MAPEL]}</SelectItem>
+                  <SelectItem value={ROLES.GURU_WALI_KELAS}>
+                    {ROLE_LABELS[ROLES.GURU_WALI_KELAS]}
+                  </SelectItem>
+                  <SelectItem value={ROLES.GURU_MAPEL}>
+                    {ROLE_LABELS[ROLES.GURU_MAPEL]}
+                  </SelectItem>
                 </SelectContent>
               </Select>
               {errors.role && (
@@ -243,69 +272,45 @@ function TeacherFormDialog({
               )}
             </div>
 
-            {/* Kelas Wali (Hanya render/aktif jika role adalah GURU_WALI_KELAS) */}
-            {form.role === ROLES.GURU_WALI_KELAS && (
+            {/* Kelas Wali — hanya muncul jika role = GURU_WALI_KELAS */}
+            {isWaliKelas && (
               <div className="grid gap-1.5 animate-in fade-in duration-200">
-                <Label htmlFor="teacher-class" className="font-semibold text-foreground">
+                <Label htmlFor="teacher-kelas" className="font-semibold text-foreground">
                   Kelas Wali <span className="text-destructive">*</span>
                 </Label>
                 <Select
-                  value={form.assignedClass}
-                  onValueChange={(val) => handleChange("assignedClass", val)}
+                  value={form.kelas_id}
+                  onValueChange={(val) => handleChange("kelas_id", val)}
+                  disabled={submitting}
                 >
                   <SelectTrigger
-                    id="teacher-class"
-                    className={errors.assignedClass ? "border-destructive" : ""}
+                    id="teacher-kelas"
+                    className={errors.kelas_id ? "border-destructive" : ""}
                   >
-                    <SelectValue placeholder="Pilih Kelas yang Tersedia..." />
+                    <SelectValue placeholder="Pilih Kelas..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableClasses.length === 0 ? (
+                    {classes.length === 0 ? (
                       <SelectItem value="none" disabled>
-                        Tidak ada kelas kosong tersedia
+                        Tidak ada kelas tersedia
                       </SelectItem>
                     ) : (
-                      availableClasses.map((cls) => (
-                        <SelectItem key={cls.id} value={cls.name}>
-                          Kelas {cls.name} ({cls.grade})
+                      classes.map((cls) => (
+                        <SelectItem key={cls.id} value={String(cls.id)}>
+                          {cls.nama_kelas}
                         </SelectItem>
                       ))
                     )}
                   </SelectContent>
                 </Select>
-                {errors.assignedClass && (
-                  <p className="text-xs text-destructive font-medium">{errors.assignedClass}</p>
+                {errors.kelas_id && (
+                  <p className="text-xs text-destructive font-medium">{errors.kelas_id}</p>
                 )}
                 <p className="text-[11px] text-muted-foreground font-medium">
-                  Hanya menampilkan kelas yang belum memiliki guru wali kelas aktif.
+                  Kelas diambil dari data master kelas.
                 </p>
               </div>
             )}
-
-            {/* Status */}
-            <div className="grid gap-1.5">
-              <Label htmlFor="teacher-status" className="font-semibold text-foreground">
-                Status <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={form.status}
-                onValueChange={(val) => handleChange("status", val)}
-              >
-                <SelectTrigger
-                  id="teacher-status"
-                  className={errors.status ? "border-destructive" : ""}
-                >
-                  <SelectValue placeholder="Pilih Status..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Aktif">Aktif</SelectItem>
-                  <SelectItem value="Tidak Aktif">Tidak Aktif</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.status && (
-                <p className="text-xs text-destructive font-medium">{errors.status}</p>
-              )}
-            </div>
           </div>
 
           <DialogFooter className="mt-4 gap-2">
@@ -314,14 +319,23 @@ function TeacherFormDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
               className="cursor-pointer font-semibold"
+              disabled={submitting}
             >
               Batal
             </Button>
             <Button
               type="submit"
-              className="cursor-pointer font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
+              className="cursor-pointer font-semibold bg-primary text-primary-foreground hover:bg-primary/90 min-w-[130px]"
+              disabled={submitting}
             >
-              {submitLabel}
+              {submitting ? (
+                <>
+                  <Loader2 className="size-4 animate-spin mr-2" />
+                  Menyimpan...
+                </>
+              ) : (
+                submitLabel
+              )}
             </Button>
           </DialogFooter>
         </form>

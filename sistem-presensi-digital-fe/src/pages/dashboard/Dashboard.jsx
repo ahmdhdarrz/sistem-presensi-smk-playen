@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "@/components/common/PageHeader";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
@@ -9,14 +9,15 @@ import { FrequentAbsenceTable } from "@/components/dashboard/FrequentAbsenceTabl
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { ClipboardCheck, Eye, ShieldCheck, School, Clock } from "lucide-react";
+import { ClipboardCheck, Eye, ShieldCheck, School, Clock, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { isAdmin, isWaliKelas, isGuruMapel, getRoleLabel } from "@/utils/roles";
-import { 
-  adminDashboardData, 
-  waliKelasDashboardData, 
-  mapelDashboardData 
-} from "@/data/dummyDashboard";
+import { isAdmin, isWaliKelas, isGuruMapel } from "@/utils/roles";
+import { getDashboard } from "@/services/dashboardService";
+
+function pct(part, total) {
+  if (!total) return "0%";
+  return ((part / total) * 100).toFixed(1) + "%";
+}
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -27,14 +28,97 @@ function Dashboard() {
   const userIsWali = isWaliKelas(role);
   const userIsMapel = isGuruMapel(role);
 
-  const classNameInfo = user?.assignedClass || user?.className || waliKelasDashboardData.className;
+  const [loading, setLoading] = useState(true);
+  const [raw, setRaw] = useState(null);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  // Select dashboard dataset based on role
-  let dashboardData = adminDashboardData;
-  if (userIsWali) {
-    dashboardData = waliKelasDashboardData;
-  } else if (userIsMapel) {
-    dashboardData = mapelDashboardData;
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    getDashboard()
+      .then((data) => {
+        if (mounted) setRaw(data);
+      })
+      .catch((err) => {
+        console.error(err);
+        if (mounted) setErrorMsg("Gagal memuat data dashboard dari server.");
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24 gap-2 text-muted-foreground">
+        <Loader2 className="size-5 animate-spin" />
+        <span>Memuat dashboard...</span>
+      </div>
+    );
+  }
+
+  if (errorMsg || !raw) {
+    return (
+      <div className="flex items-center justify-center py-24 text-destructive font-medium">
+        {errorMsg || "Data tidak tersedia."}
+      </div>
+    );
+  }
+
+  const classNameInfo = raw.class_name || user?.assignedClass || user?.className || "-";
+
+  // ─── Bangun bentuk data sesuai role ────────────────────────────────────────
+  let dashboardData = {};
+
+  if (userIsAdmin || userIsMapel) {
+    const s = raw.stats;
+    const tidakHadir = (s.izin || 0) + (s.sakit || 0) + (s.alpa || 0);
+
+    dashboardData = {
+      stats: userIsMapel
+        ? [
+            { title: "Total Siswa Terdaftar", value: String(s.total_siswa), description: "Seluruh kelas di SMK M 1 Playen", icon: "Users" },
+            { title: "Kehadiran Hari Ini", value: String(s.hadir_hari_ini), description: `${pct(s.hadir_hari_ini, s.total_siswa)} total kehadiran siswa`, icon: "UserCheck" },
+            { title: "Siswa Tidak Hadir", value: String(tidakHadir), description: `Izin: ${s.izin} | Sakit: ${s.sakit} | Alpa: ${s.alpa}`, icon: "UserX" },
+            { title: "Status Akses", value: "View Only", description: "Akses informasi & rekapitulasi", icon: "Eye" },
+          ]
+        : [
+            { title: "Total Siswa Sekolah", value: String(s.total_siswa), description: `Terdaftar di ${s.total_kelas} kelas`, icon: "Users" },
+            { title: "Hadir Hari Ini", value: String(s.hadir_hari_ini), description: `${pct(s.hadir_hari_ini, s.total_siswa)} tingkat kehadiran sekolah`, icon: "UserCheck" },
+            { title: "Siswa Tidak Hadir", value: String(tidakHadir), description: `Izin: ${s.izin} | Sakit: ${s.sakit} | Alpa: ${s.alpa}`, icon: "UserX" },
+            { title: "Status Presensi Kelas", value: `${s.kelas_sudah_input} / ${s.total_kelas} Kelas`, description: "Kelas telah menginput presensi harian", icon: "School" },
+          ],
+      sessionStatus: raw.session_status,
+      comparisonData: raw.comparison_data,
+      trendData: raw.trend_data,
+      frequentAbsences: raw.frequent_absences,
+      recentLogs: raw.recent_logs || [],
+    };
+  } else if (userIsWali) {
+    const s = raw.stats;
+    dashboardData = {
+      className: classNameInfo,
+      stats: [
+        { title: "Total Siswa Kelas", value: String(s.total_siswa), description: `Terdaftar di kelas ${classNameInfo}`, icon: "Users" },
+        { title: "Hadir Hari Ini", value: String(s.hadir_hari_ini), description: `${pct(s.hadir_hari_ini, s.total_siswa)} tingkat kehadiran hari ini`, icon: "UserCheck" },
+        { title: "Siswa Tidak Hadir", value: String(s.izin + s.sakit + s.alpa), description: `Sakit: ${s.sakit} | Izin: ${s.izin} | Alpa: ${s.alpa}`, icon: "UserX" },
+        {
+          title: "Status Presensi Hari Ini",
+          value: `Pagi: ${s.sesi_pagi ? "✓" : "○"} | Sore: ${s.sesi_sore ? "✓" : "○"}`,
+          description: s.sesi_pagi
+            ? (s.sesi_sore ? "Sesi Pagi & Sore selesai" : "Sesi Pagi selesai, Sore belum")
+            : "Sesi Pagi belum diinput",
+          icon: "ClipboardCheck",
+        },
+      ],
+      sessionStatus: raw.session_status,
+      comparisonData: raw.comparison_data,
+      trendData: raw.trend_data,
+      frequentAbsences: raw.frequent_absences,
+    };
   }
 
   // Header Title & Description
@@ -84,14 +168,8 @@ function Dashboard() {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* 1. Page Header */}
-      <PageHeader
-        title={headerTitle}
-        description={headerDescription}
-        actions={headerActions}
-      />
+      <PageHeader title={headerTitle} description={headerDescription} actions={headerActions} />
 
-      {/* Identity Banner for Wali Kelas */}
       {userIsWali && (
         <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-between text-left shadow-2xs">
           <div className="flex items-center gap-3">
@@ -113,12 +191,9 @@ function Dashboard() {
         </div>
       )}
 
-      {/* 2. Statistics Cards Grid */}
       <DashboardStats stats={dashboardData.stats} />
 
-      {/* 3. Role-Based Dashboard Content Layout */}
       {userIsMapel ? (
-        /* GURU MAPEL VIEW: Recent Activity Logs + Attendance Trend Chart */
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-5">
             <Card className="h-full border-border text-left">
@@ -129,45 +204,44 @@ function Dashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-slate-50/70 dark:bg-slate-800/50">
-                      <TableHead className="font-bold text-foreground">Waktu</TableHead>
-                      <TableHead className="font-bold text-foreground">Kelas</TableHead>
-                      <TableHead className="font-bold text-foreground">Status Log</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mapelDashboardData.recentLogs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell className="font-mono text-xs font-semibold text-muted-foreground py-3">
-                          {log.time}
-                        </TableCell>
-                        <TableCell className="font-bold text-foreground py-3">
-                          {log.class}
-                        </TableCell>
-                        <TableCell className="text-xs font-medium py-3 text-emerald-700 dark:text-emerald-400">
-                          {log.status}
-                        </TableCell>
+                {dashboardData.recentLogs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground p-6 text-center">
+                    Belum ada aktivitas input presensi hari ini.
+                  </p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50/70 dark:bg-slate-800/50">
+                        <TableHead className="font-bold text-foreground">Waktu</TableHead>
+                        <TableHead className="font-bold text-foreground">Kelas</TableHead>
+                        <TableHead className="font-bold text-foreground">Status Log</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {dashboardData.recentLogs.map((log) => (
+                        <TableRow key={log.id}>
+                          <TableCell className="font-mono text-xs font-semibold text-muted-foreground py-3">
+                            {log.time}
+                          </TableCell>
+                          <TableCell className="font-bold text-foreground py-3">{log.class}</TableCell>
+                          <TableCell className="text-xs font-medium py-3 text-emerald-700 dark:text-emerald-400">
+                            {log.status}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </div>
 
           <div className="lg:col-span-7">
-            <AttendanceTrendChart
-              isTeacher={false}
-              data={mapelDashboardData.trendData}
-            />
+            <AttendanceTrendChart isTeacher={false} data={dashboardData.trendData} />
           </div>
         </div>
       ) : (
-        /* ADMIN & GURU WALI KELAS VIEW */
         <>
-          {/* Section 1: Session Status & Comparison Chart */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-5">
               <SessionStatus
@@ -177,26 +251,16 @@ function Dashboard() {
               />
             </div>
             <div className="lg:col-span-7">
-              <AttendanceComparisonChart
-                isTeacher={userIsWali}
-                data={dashboardData.comparisonData}
-              />
+              <AttendanceComparisonChart isTeacher={userIsWali} data={dashboardData.comparisonData} />
             </div>
           </div>
 
-          {/* Section 2: Trend Chart & Frequent Absence Table */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-7">
-              <AttendanceTrendChart
-                isTeacher={userIsWali}
-                data={dashboardData.trendData}
-              />
+              <AttendanceTrendChart isTeacher={userIsWali} data={dashboardData.trendData} />
             </div>
             <div className="lg:col-span-5">
-              <FrequentAbsenceTable
-                isTeacher={userIsWali}
-                data={dashboardData.frequentAbsences}
-              />
+              <FrequentAbsenceTable isTeacher={userIsWali} data={dashboardData.frequentAbsences} />
             </div>
           </div>
         </>
@@ -205,4 +269,4 @@ function Dashboard() {
   );
 }
 
-export default Dashboard;
+export default Dashboard;  

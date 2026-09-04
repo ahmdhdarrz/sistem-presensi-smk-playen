@@ -8,29 +8,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { masterClasses } from "@/data/dummyStudents";
 
 /**
- * Komponen area filter dan pencarian untuk halaman Data Siswa.
- * Menampilkan search input, filter kelas, dan informasi jumlah data.
+ * classes: [{ id, nama_kelas }] — dari API GET /api/kelas
  */
-function StudentFilters({ search, onSearchChange, selectedClass, onClassChange, filteredCount, totalCount }) {
+function StudentFilters({
+  search,
+  onSearchChange,
+  selectedClass,
+  onClassChange,
+  filteredCount,
+  totalCount,
+  classes = [],
+}) {
   return (
     <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-      {/* Search Input */}
       <div className="relative flex-1 w-full sm:max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
         <Input
           id="student-search"
           type="search"
-          placeholder="Cari nama, NIS, atau NISN..."
+          placeholder="Cari nama atau NIS..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-9 bg-card"
         />
       </div>
 
-      {/* Filter Kelas */}
       <div className="w-full sm:w-44">
         <Select value={selectedClass} onValueChange={onClassChange}>
           <SelectTrigger id="student-class-filter" className="bg-card w-full">
@@ -39,22 +43,18 @@ function StudentFilters({ search, onSearchChange, selectedClass, onClassChange, 
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua Kelas</SelectItem>
-            {masterClasses.map((cls) => (
-              <SelectItem key={cls.id} value={cls.name}>
-                {cls.name}
+            {classes.map((cls) => (
+              <SelectItem key={cls.id} value={cls.nama_kelas}>
+                {cls.nama_kelas}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* Info Jumlah Data */}
       <p className="text-sm text-muted-foreground whitespace-nowrap shrink-0 font-medium">
-        Menampilkan{" "}
-        <span className="font-bold text-foreground">{filteredCount}</span>{" "}
-        dari{" "}
-        <span className="font-bold text-foreground">{totalCount}</span>{" "}
-        siswa
+        Menampilkan <span className="font-bold text-foreground">{filteredCount}</span>{" "}
+        dari <span className="font-bold text-foreground">{totalCount}</span> siswa
       </p>
     </div>
   );

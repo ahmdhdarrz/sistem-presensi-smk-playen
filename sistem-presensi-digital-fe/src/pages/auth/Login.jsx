@@ -49,7 +49,7 @@ function Login() {
     return isValid;
   };
 
-  const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
     e.preventDefault();
     setGeneralError("");
 
@@ -59,17 +59,14 @@ function Login() {
 
     setIsLoading(true);
 
-    // Mock Login via AuthContext (temporary development authentication)
-    setTimeout(() => {
-      const result = login(identity, password);
-      setIsLoading(false);
+    const result = await login(identity, password);
+    setIsLoading(false);
 
-      if (result.success) {
-        navigate("/dashboard");
-      } else {
-        setGeneralError(result.message || "Username atau password tidak sesuai.");
-      }
-    }, 400);
+    if (result.success) {
+      navigate("/dashboard");
+    } else {
+      setGeneralError(result.message || "Username atau password tidak sesuai.");
+    }
   };
 
   return (

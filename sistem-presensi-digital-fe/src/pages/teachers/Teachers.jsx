@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from "react";
-import { UserPlus } from "lucide-react";
+import React, { useState, useMemo, useEffect } from "react";
+import { UserPlus, Loader2 } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,28 +15,35 @@ import {
 import TeacherFilters from "@/pages/teachers/components/TeacherFilters";
 import TeachersTable from "@/pages/teachers/components/TeachersTable";
 import TeacherFormDialog from "@/pages/teachers/components/TeacherFormDialog";
-// TODO: Replace masterTeachers with Laravel API response — GET /api/teachers
-import { masterTeachers } from "@/data/dummyTeachers";
-
-// Seed ID untuk data guru baru
-let nextTempId = 1000;
+import {
+  getUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+  getKelas,
+} from "@/services/userService";
+import { ROLES } from "@/utils/roles";
 
 function Teachers() {
   // ─── State utama ──────────────────────────────────────────────────────────
-  const [teachers, setTeachers] = useState(masterTeachers);
+  const [teachers, setTeachers] = useState([]);
+  const [classes, setClasses] = useState([]); // [{id, nama_kelas}]
+  const [loading, setLoading] = useState(true);
+
+  // ─── State filter ─────────────────────────────────────────────────────────
   const [search, setSearch] = useState("");
   const [selectedRole, setSelectedRole] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
 
   // ─── State dialog ─────────────────────────────────────────────────────────
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState("create"); // "create" | "edit"
   const [editTarget, setEditTarget] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  // ─── Toast / feedback sederhana ───────────────────────────────────────────
+  // ─── Toast / feedback ─────────────────────────────────────────────────────
   const [toast, setToast] = useState(null); // { message, type: "success" | "error" }
 
   const showToast = (message, type = "success") => {
@@ -44,85 +51,126 @@ function Teachers() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  // ─── Mapping data API → shape yang dipakai UI ─────────────────────────────
+  const mapUser = (item, kelasList) => {
+    const kelas = kelasList.find((k) => k.id === item.kelas_id);
+    // Normalise role dari backend (lowercase) ke uppercase agar cocok dengan ROLES constant
+    const roleNorm = item.role ? String(item.role).toUpperCase() : "";
+    const roleKey =
+      roleNorm === "WALI_KELAS"
+        ? ROLES.GURU_WALI_KELAS
+        : roleNorm === "GURU_MAPEL"
+        ? ROLES.GURU_MAPEL
+        : roleNorm; // ADMIN stays ADMIN
+
+    return {
+      id: item.id,
+      nama: item.nama,
+      username: item.username,
+      role: roleKey,
+      kelas_id: item.kelas_id,
+      kelasNama: kelas ? kelas.nama_kelas : null,
+    };
+  };
+
+  // ─── Load data dari API ────────────────────────────────────────────────────
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [usersRes, kelasRes] = await Promise.all([getUsers(), getKelas()]);
+      const kelasList = kelasRes.data || kelasRes;
+      setClasses(kelasList);
+      const userList = usersRes.data || usersRes;
+      setTeachers(userList.map((u) => mapUser(u, kelasList)));
+    } catch (err) {
+      console.error(err);
+      showToast("Gagal memuat data guru dari server.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
   // ─── Filtering & Search ───────────────────────────────────────────────────
   const filteredTeachers = useMemo(() => {
     const q = search.toLowerCase().trim();
     return teachers.filter((t) => {
-      // Filter Role
-      const matchesRole = selectedRole === "all" || t.role === selectedRole;
-      
-      // Filter Status
-      const matchesStatus = selectedStatus === "all" || t.status === selectedStatus;
+      const matchesRole =
+        selectedRole === "all" ||
+        String(t.role).toUpperCase() === String(selectedRole).toUpperCase();
 
-      // Search Name, NIP, Username
       const matchesSearch =
         !q ||
-        t.name.toLowerCase().includes(q) ||
-        t.nip.includes(q) ||
+        t.nama.toLowerCase().includes(q) ||
         t.username.toLowerCase().includes(q);
 
-      return matchesRole && matchesStatus && matchesSearch;
+      return matchesRole && matchesSearch;
     });
-  }, [teachers, search, selectedRole, selectedStatus]);
+  }, [teachers, search, selectedRole]);
 
   // ─── Handlers CRUD ────────────────────────────────────────────────────────
 
-  /** Buka Dialog Tambah Guru */
   const handleOpenAdd = () => {
     setFormMode("create");
     setEditTarget(null);
     setFormOpen(true);
   };
 
-  /** Buka Dialog Edit Guru */
   const handleOpenEdit = (teacher) => {
     setFormMode("edit");
     setEditTarget(teacher);
     setFormOpen(true);
   };
 
-  /** Simpan Data (Tambah atau Edit) */
-  const handleFormSubmit = (formData) => {
-    if (formMode === "create") {
-      // TODO: Replace with POST /api/teachers
-      const newTeacher = {
-        ...formData,
-        id: ++nextTempId,
-      };
-      setTeachers((prev) => [newTeacher, ...prev]);
-      showToast("Data guru berhasil ditambahkan.");
-    } else {
-      // TODO: Replace with PUT /api/teachers/{id}
-      setTeachers((prev) =>
-        prev.map((t) =>
-          t.id === editTarget.id ? { ...t, ...formData } : t
-        )
-      );
-      showToast("Data guru berhasil diperbarui.");
+  const handleFormSubmit = async (payload) => {
+    setSubmitting(true);
+    try {
+      if (formMode === "create") {
+        await createUser(payload);
+        showToast("Data guru berhasil ditambahkan.");
+      } else {
+        await updateUser(editTarget.id, payload);
+        showToast("Data guru berhasil diperbarui.");
+      }
+      setFormOpen(false);
+      setEditTarget(null);
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      const message =
+        err.response?.data?.message || "Gagal menyimpan data guru.";
+      showToast(message, "error");
+    } finally {
+      setSubmitting(false);
     }
-    setFormOpen(false);
-    setEditTarget(null);
   };
 
-  /** Buka konfirmasi Hapus Guru */
   const handleOpenDelete = (teacher) => {
     setDeleteTarget(teacher);
     setDeleteOpen(true);
   };
 
-  /** Konfirmasi hapus */
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
-    // TODO: Replace with DELETE /api/teachers/{id}
-    setTeachers((prev) => prev.filter((t) => t.id !== deleteTarget.id));
-    showToast(`Data guru "${deleteTarget.name}" berhasil dihapus.`);
-    setDeleteOpen(false);
-    setDeleteTarget(null);
+    try {
+      await deleteUser(deleteTarget.id);
+      showToast(`Data guru "${deleteTarget.nama}" berhasil dihapus.`);
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      showToast("Gagal menghapus data guru.", "error");
+    } finally {
+      setDeleteOpen(false);
+      setDeleteTarget(null);
+    }
   };
 
   return (
     <div className="relative">
-      {/* ── Toast feedback ─────────────────────────────────────────────── */}
+      {/* ── Toast feedback ──────────────────────────────────────────────── */}
       {toast && (
         <div
           className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm font-semibold transition-all duration-300 animate-in slide-in-from-bottom-4 ${
@@ -142,7 +190,7 @@ function Teachers() {
         </div>
       )}
 
-      {/* ── Page Header ────────────────────────────────────────────────── */}
+      {/* ── Page Header ─────────────────────────────────────────────────── */}
       <PageHeader
         title="Data Guru"
         description="Kelola data guru, peran, dan informasi kelas wali."
@@ -158,7 +206,7 @@ function Teachers() {
         }
       />
 
-      {/* ── Card Konten Utama ───────────────────────────────────────────── */}
+      {/* ── Card Konten Utama ────────────────────────────────────────────── */}
       <div className="bg-card rounded-xl border border-border shadow-xs p-4 sm:p-6 space-y-4">
         {/* Filter & Search */}
         <TeacherFilters
@@ -166,31 +214,37 @@ function Teachers() {
           onSearchChange={setSearch}
           selectedRole={selectedRole}
           onRoleChange={setSelectedRole}
-          selectedStatus={selectedStatus}
-          onStatusChange={setSelectedStatus}
           filteredCount={filteredTeachers.length}
           totalCount={teachers.length}
         />
 
-        {/* Tabel Guru */}
-        <TeachersTable
-          teachers={filteredTeachers}
-          onEdit={handleOpenEdit}
-          onDelete={handleOpenDelete}
-        />
+        {/* Tabel Guru / Loading State */}
+        {loading ? (
+          <div className="flex items-center justify-center py-16 gap-2 text-muted-foreground">
+            <Loader2 className="size-5 animate-spin" />
+            <span>Memuat data guru...</span>
+          </div>
+        ) : (
+          <TeachersTable
+            teachers={filteredTeachers}
+            onEdit={handleOpenEdit}
+            onDelete={handleOpenDelete}
+          />
+        )}
       </div>
 
-      {/* ── Dialog Form Tambah / Edit ──────────────────────────────────── */}
+      {/* ── Dialog Form Tambah / Edit ────────────────────────────────────── */}
       <TeacherFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}
         mode={formMode}
         teacher={editTarget}
-        teachersList={teachers}
+        classes={classes}
         onSubmit={handleFormSubmit}
+        submitting={submitting}
       />
 
-      {/* ── Alert Dialog Konfirmasi Hapus ──────────────────────────────── */}
+      {/* ── Alert Dialog Konfirmasi Hapus ────────────────────────────────── */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -200,7 +254,7 @@ function Teachers() {
             <AlertDialogDescription className="text-muted-foreground">
               Apakah Anda yakin ingin menghapus data guru{" "}
               <span className="font-semibold text-foreground">
-                {deleteTarget?.name}
+                {deleteTarget?.nama}
               </span>
               ? Data guru yang dihapus akan terhapus dari daftar presensi/pengajar.
             </AlertDialogDescription>

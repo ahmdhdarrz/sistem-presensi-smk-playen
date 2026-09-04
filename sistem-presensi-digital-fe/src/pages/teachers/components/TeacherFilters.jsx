@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, Filter, Shield } from "lucide-react";
+import { Search, Shield } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -11,15 +11,14 @@ import {
 import { ROLES, ROLE_LABELS } from "@/utils/roles";
 
 /**
- * Komponen filter & search untuk Halaman Data Guru (Admin).
+ * Filter & Search untuk Halaman Data Guru.
+ * Filter Status dihapus karena backend tidak memiliki field status di tabel users.
  */
 function TeacherFilters({
   search,
   onSearchChange,
   selectedRole,
   onRoleChange,
-  selectedStatus,
-  onStatusChange,
   filteredCount,
   totalCount,
 }) {
@@ -31,7 +30,7 @@ function TeacherFilters({
         <Input
           id="teacher-search"
           type="search"
-          placeholder="Cari nama, NIP, atau username..."
+          placeholder="Cari nama atau username..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-9 bg-card text-foreground"
@@ -39,7 +38,7 @@ function TeacherFilters({
       </div>
 
       {/* Filter Role */}
-      <div className="w-full sm:w-48">
+      <div className="w-full sm:w-52">
         <Select value={selectedRole} onValueChange={onRoleChange}>
           <SelectTrigger id="teacher-role-filter" className="bg-card w-full text-foreground">
             <Shield className="size-4 text-muted-foreground mr-1 shrink-0" />
@@ -50,21 +49,6 @@ function TeacherFilters({
             <SelectItem value={ROLES.ADMIN}>{ROLE_LABELS[ROLES.ADMIN]}</SelectItem>
             <SelectItem value={ROLES.GURU_WALI_KELAS}>{ROLE_LABELS[ROLES.GURU_WALI_KELAS]}</SelectItem>
             <SelectItem value={ROLES.GURU_MAPEL}>{ROLE_LABELS[ROLES.GURU_MAPEL]}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Filter Status */}
-      <div className="w-full sm:w-44">
-        <Select value={selectedStatus} onValueChange={onStatusChange}>
-          <SelectTrigger id="teacher-status-filter" className="bg-card w-full text-foreground">
-            <Filter className="size-4 text-muted-foreground mr-1 shrink-0" />
-            <SelectValue placeholder="Semua Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Status</SelectItem>
-            <SelectItem value="Aktif">Aktif</SelectItem>
-            <SelectItem value="Tidak Aktif">Tidak Aktif</SelectItem>
           </SelectContent>
         </Select>
       </div>

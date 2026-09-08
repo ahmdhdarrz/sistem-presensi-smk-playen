@@ -16,50 +16,53 @@
   -moz-osx-font-smoothing: grayscale;
 
   /* Brand Base Colors */
-  --background: #F8FAFC;
-  --foreground: #1E293B;
+  --background: #FFFFFF;
+  --foreground: #10102B;
 
   --card: #FFFFFF;
-  --card-foreground: #1E293B;
+  --card-foreground: #10102B;
 
   --popover: #FFFFFF;
-  --popover-foreground: #1E293B;
+  --popover-foreground: #10102B;
 
-  /* Primary: Blue 700 (#1F5F99) / Blue 600 (#2563A8) */
-  --primary: #1F5F99;
+  /* Primary: Blue (#00008B) */
+  --primary: #00008B;
   --primary-foreground: #FFFFFF;
 
-  /* Secondary: Neutral Soft (#F1F5F9) */
-  --secondary: #F1F5F9;
-  --secondary-foreground: #1F5F99;
+  /* Secondary: Blue-light (#E3E3F5) */
+  --secondary: #E3E3F5;
+  --secondary-foreground: #00008B;
 
-  /* Muted: Slate (#64748B, #F1F5F9) */
-  --muted: #F1F5F9;
-  --muted-foreground: #64748B;
+  /* Muted: Cream (#F7F6F1) / Ink-soft (#585C72) */
+  --muted: #F7F6F1;
+  --muted-foreground: #585C72;
 
-  /* Accent: Yellow 500 (#EAB308) / Accent Text (#0F2742) */
-  --accent: #EAB308;
-  --accent-foreground: #0F2742;
+  /* Accent: Yellow (#F5C518) */
+  --accent: #F5C518;
+  --accent-foreground: #10102B;
 
   /* Destructive: Red */
   --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
 
-  --border: #E2E8F0;
-  --input: #E2E8F0;
-  --ring: #2563A8;
+  --border: #E3E3F5;
+  --input: #E3E3F5;
+  --ring: #00008B;
 
-  --radius: 0.625rem;
+  --radius-lg: 28px;
+  --radius-md: 18px;
+  --radius-sm: 12px;
+  --radius: 12px; /* Set base radius for shadcn component compatibility */
 
-  /* Sidebar Design Tokens (Dark Blue Theme) */
-  --sidebar: #0F2742;
-  --sidebar-foreground: #F8FAFC;
-  --sidebar-primary: #2563A8;
+  /* Sidebar Design Tokens (Deep Blue Theme) */
+  --sidebar: #00003D;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-primary: #00008B;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #1E4D7B;
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: #1E4D7B;
-  --sidebar-ring: #3B82C4;
+  --sidebar-accent: #E3E3F5;
+  --sidebar-accent-foreground: #00008B;
+  --sidebar-border: #00008B;
+  --sidebar-ring: #00008B;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -170,13 +173,15 @@ code {
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --shadow: 0 12px 32px -12px rgba(0,0,61,0.22);
+  --shadow-sm: 0 6px 18px -8px rgba(0,0,61,0.16);
 }
 
 .dark {

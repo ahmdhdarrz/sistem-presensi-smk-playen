@@ -15,7 +15,7 @@ import {
 import PermissionFilters from "./components/PermissionFilters";
 import PermissionTable from "./components/PermissionTable";
 import PermissionFormDialog from "./components/PermissionFormDialog";
-import { getIzinHarian, createIzinHarian, deleteIzinHarian } from "@/services/izinHarianService";
+import { getIzinHarian, createIzinHarian, updateIzinHarian, deleteIzinHarian } from "@/services/izinHarianService";
 import { getKelas } from "@/services/siswaService";
 import { useAuth } from "@/context/AuthContext";
 import { isAdmin } from "@/utils/roles";
@@ -36,6 +36,7 @@ function AttendancePermissions() {
   const [selectedClass, setSelectedClass] = useState("all");
 
   const [formOpen, setFormOpen] = useState(false);
+  const [editingData, setEditingData] = useState(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -70,6 +71,8 @@ function AttendancePermissions() {
         date: item.tanggal,
         time: item.waktu_keluar,
         reason: item.alasan,
+        tanggalKembali: item.tanggal_kembali || "",
+        jamKembali: item.jam_kembali || "",
       }));
       setPermissions(mapped);
     } catch (error) {
@@ -96,18 +99,41 @@ function AttendancePermissions() {
     return { total: permissions.length, activeToday };
   }, [permissions]);
 
-  const handleOpenAdd = () => setFormOpen(true);
+  const handleOpenAdd = () => {
+    setEditingData(null);
+    setFormOpen(true);
+  };
+
+  const handleOpenEdit = (permission) => {
+    setEditingData(permission);
+    setFormOpen(true);
+  };
 
   const handleFormSubmit = async (formData) => {
     try {
-      await createIzinHarian({
-        siswa_id: formData.studentId,
-        tanggal: formData.date,
-        waktu_keluar: formData.time,
-        alasan: formData.reason,
-      });
-      showToast("Izin harian berhasil ditambahkan.");
+      if (editingData) {
+        await updateIzinHarian(editingData.id, {
+          siswa_id: formData.siswa_id,
+          tanggal: formData.tanggal,
+          waktu_keluar: formData.waktu_keluar,
+          alasan: formData.alasan,
+          tanggal_kembali: formData.tanggal_kembali,
+          jam_kembali: formData.jam_kembali,
+        });
+        showToast("Izin harian berhasil diperbarui.");
+      } else {
+        await createIzinHarian({
+          siswa_id: formData.siswa_id,
+          tanggal: formData.tanggal,
+          waktu_keluar: formData.waktu_keluar,
+          alasan: formData.alasan,
+          tanggal_kembali: formData.tanggal_kembali,
+          jam_kembali: formData.jam_kembali,
+        });
+        showToast("Izin harian berhasil ditambahkan.");
+      }
       setFormOpen(false);
+      setEditingData(null);
       fetchIzinHarian(selectedDate);
     } catch (error) {
       const message = error.response?.data?.message || "Gagal menyimpan data izin harian.";
@@ -138,18 +164,16 @@ function AttendancePermissions() {
     <div className="relative">
       {toast && (
         <div
-          className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm font-semibold transition-all duration-300 animate-in slide-in-from-bottom-4 ${
-            toast.type === "success"
+          className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm font-semibold transition-all duration-300 animate-in slide-in-from-bottom-4 ${toast.type === "success"
               ? "bg-emerald-50 border-emerald-200 text-emerald-800"
               : "bg-destructive/10 border-destructive/30 text-destructive"
-          }`}
+            }`}
           role="status"
           aria-live="polite"
         >
           <span
-            className={`size-2 rounded-full shrink-0 ${
-              toast.type === "success" ? "bg-emerald-500" : "bg-destructive"
-            }`}
+            className={`size-2 rounded-full shrink-0 ${toast.type === "success" ? "bg-emerald-500" : "bg-destructive"
+              }`}
           />
           {toast.message}
         </div>
@@ -183,8 +207,8 @@ function AttendancePermissions() {
           </div>
         </div>
         <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4 shadow-sm">
-          <div className="size-12 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
-            <Clock className="size-6 text-amber-500" />
+          <div className="size-12 rounded-full bg-yellow-500/10 flex items-center justify-center shrink-0">
+            <Clock className="size-6 text-yellow-600" />
           </div>
           <div>
             <p className="text-sm font-medium text-muted-foreground">Izin Hari Ini</p>
@@ -213,7 +237,9 @@ function AttendancePermissions() {
         ) : (
           <PermissionTable
             permissions={filteredPermissions}
+            onEdit={handleOpenEdit}
             onDelete={handleOpenDelete}
+            canEdit={userIsAdmin}
             canDelete={userIsAdmin}
           />
         )}
@@ -225,6 +251,7 @@ function AttendancePermissions() {
           onOpenChange={setFormOpen}
           onSubmit={handleFormSubmit}
           classes={classes}
+          editingData={editingData}
         />
       )}
 

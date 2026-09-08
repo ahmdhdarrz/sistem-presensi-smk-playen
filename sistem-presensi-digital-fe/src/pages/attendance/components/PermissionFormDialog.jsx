@@ -25,13 +25,17 @@ const EMPTY_FORM = {
   date: "",
   time: "",
   reason: "",
+  tanggalKembali: "",
+  jamKembali: "",
 };
 
 /**
- * Dialog Tambah Izin Harian.
+ * Dialog Tambah/Edit Izin Harian.
+
  * classes: [{id, nama_kelas}] dari GET /api/kelas
+ * editingData: objek izin yang sedang diedit (null untuk mode tambah)
  */
-function PermissionFormDialog({ open, onOpenChange, onSubmit, classes = [] }) {
+function PermissionFormDialog({ open, onOpenChange, onSubmit, classes = [], editingData = null }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const [students, setStudents] = useState([]);
@@ -39,12 +43,27 @@ function PermissionFormDialog({ open, onOpenChange, onSubmit, classes = [] }) {
 
   useEffect(() => {
     if (open) {
-      const today = new Date().toISOString().split("T")[0];
-      setForm({ ...EMPTY_FORM, date: today, time: "07:00" });
-      setStudents([]);
+      if (editingData) {
+        setForm({
+          kelasId: editingData.kelasId 
+            ? String(editingData.kelasId) 
+            : (classes.find(c => c.nama_kelas === editingData.className)?.id 
+                ? String(classes.find(c => c.nama_kelas === editingData.className).id) 
+                : ""),
+          studentId: editingData.studentId ? String(editingData.studentId) : "",
+          date: editingData.date || "",
+          time: editingData.time || "",
+          reason: editingData.reason || "",
+          tanggalKembali: editingData.tanggalKembali || "",
+          jamKembali: editingData.jamKembali || "",
+        });
+      } else {
+        const today = new Date().toISOString().split("T")[0];
+        setForm({ ...EMPTY_FORM, date: today, time: "07:00" });
+      }
       setErrors({});
     }
-  }, [open]);
+  }, [open, editingData]);
 
   // Load siswa tiap kali kelas dipilih
   useEffect(() => {
@@ -75,7 +94,13 @@ function PermissionFormDialog({ open, onOpenChange, onSubmit, classes = [] }) {
     if (!form.date) newErrors.date = "Tanggal wajib diisi.";
     if (!form.time) newErrors.time = "Waktu wajib diisi.";
     if (!form.reason.trim()) newErrors.reason = "Alasan wajib diisi.";
+    if ((form.tanggalKembali && !form.jamKembali) || (!form.tanggalKembali && form.jamKembali)) {
+      newErrors.tanggalKembali = "Tanggal Kembali dan Jam Kembali harus diisi bersamaan.";
+    } else if (form.tanggalKembali && form.date && form.tanggalKembali < form.date) {
+      newErrors.tanggalKembali = "Tanggal kembali tidak boleh lebih awal dari tanggal izin.";
+    }
     return newErrors;
+;
   };
 
   const handleSubmit = (e) => {
@@ -87,10 +112,12 @@ function PermissionFormDialog({ open, onOpenChange, onSubmit, classes = [] }) {
     }
 
     onSubmit({
-      studentId: Number(form.studentId),
-      date: form.date,
-      time: form.time,
-      reason: form.reason,
+      siswa_id: Number(form.studentId),
+      tanggal: form.date,
+      waktu_keluar: form.time,
+      alasan: form.reason,
+      tanggal_kembali: form.tanggalKembali || null,
+      jam_kembali: form.jamKembali || null,
     });
   };
 
@@ -98,9 +125,12 @@ function PermissionFormDialog({ open, onOpenChange, onSubmit, classes = [] }) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-lg font-bold text-foreground">Tambah Izin Harian</DialogTitle>
+          <DialogTitle className="text-lg font-bold text-foreground">
+            {editingData ? "Edit Izin Harian" : "Tambah Izin Harian"}
+          </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
             Catatan: siswa harus sudah tercatat <strong>hadir</strong> pada tanggal tersebut sebelum bisa diinput izin.
+
           </DialogDescription>
         </DialogHeader>
 
@@ -184,6 +214,36 @@ function PermissionFormDialog({ open, onOpenChange, onSubmit, classes = [] }) {
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-1.5">
+                <Label htmlFor="perm-return-date" className="font-semibold text-foreground">
+                  Tanggal Kembali
+                </Label>
+                <Input
+                  id="perm-return-date"
+                  type="date"
+                  value={form.tanggalKembali}
+                  onChange={(e) => handleChange("tanggalKembali", e.target.value)}
+                  className={errors.tanggalKembali ? "border-destructive focus-visible:ring-destructive/30" : ""}
+                />
+                {errors.tanggalKembali && <p className="text-xs text-destructive font-medium">{errors.tanggalKembali}</p>}
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="perm-return-time" className="font-semibold text-foreground">
+                  Jam Kembali
+                </Label>
+                <Input
+                  id="perm-return-time"
+                  type="time"
+                  value={form.jamKembali}
+                  onChange={(e) => handleChange("jamKembali", e.target.value)}
+                  className={errors.jamKembali ? "border-destructive focus-visible:ring-destructive/30" : ""}
+                />
+                {errors.jamKembali && <p className="text-xs text-destructive font-medium">{errors.jamKembali}</p>}
+              </div>
+            </div>
+
             {/* Alasan */}
             <div className="grid gap-1.5">
               <Label htmlFor="perm-reason" className="font-semibold text-foreground">
@@ -219,7 +279,7 @@ function PermissionFormDialog({ open, onOpenChange, onSubmit, classes = [] }) {
               type="submit"
               className="cursor-pointer font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              Simpan Izin
+              {editingData ? "Perbarui Izin" : "Simpan Izin"}
             </Button>
           </DialogFooter>
         </form>

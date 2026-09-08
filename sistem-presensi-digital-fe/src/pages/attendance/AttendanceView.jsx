@@ -219,22 +219,22 @@ function AttendanceView() {
           </p>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 text-left">
-          <div className="flex items-center justify-between text-blue-700 dark:text-blue-400">
+        <div className="p-3.5 rounded-xl border border-yellow-200 bg-yellow-50/50 dark:bg-yellow-950/20 text-left">
+          <div className="flex items-center justify-between text-yellow-700 dark:text-yellow-400">
             <span className="text-xs font-semibold">IZIN</span>
             <Clock className="size-4" />
           </div>
-          <p className="text-xl font-bold text-blue-800 dark:text-blue-300 mt-1">
+          <p className="text-xl font-bold text-yellow-800 dark:text-yellow-300 mt-1">
             {summary.izin} <span className="text-xs font-normal text-muted-foreground">Siswa</span>
           </p>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 text-left">
-          <div className="flex items-center justify-between text-amber-700 dark:text-amber-400">
+        <div className="p-3.5 rounded-xl border border-orange-200 bg-orange-50/50 dark:bg-orange-950/20 text-left">
+          <div className="flex items-center justify-between text-orange-700 dark:text-orange-400">
             <span className="text-xs font-semibold">SAKIT</span>
             <AlertTriangle className="size-4" />
           </div>
-          <p className="text-xl font-bold text-amber-800 dark:text-amber-300 mt-1">
+          <p className="text-xl font-bold text-orange-800 dark:text-orange-300 mt-1">
             {summary.sakit} <span className="text-xs font-normal text-muted-foreground">Siswa</span>
           </p>
         </div>
@@ -287,8 +287,8 @@ function AttendanceView() {
                           className={cn(
                             "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold",
                             s.status === "Hadir" && "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300",
-                            s.status === "Izin" && "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300",
-                            s.status === "Sakit" && "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300",
+                            s.status === "Izin" && "bg-yellow-100 text-yellow-800 dark:bg-yellow-950/60 dark:text-yellow-300",
+                            s.status === "Sakit" && "bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300",
                             s.status === "Alpa" && "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
                           )}
                         >

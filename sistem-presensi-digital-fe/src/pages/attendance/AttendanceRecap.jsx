@@ -38,8 +38,8 @@ function SummaryCards({ summary }) {
   const cards = [
     { label: "Total Siswa", value: summary.total, icon: Users, colorClass: "border-border bg-card", iconClass: "text-primary", valueClass: "text-foreground" },
     { label: "Hadir", value: summary.hadir, icon: UserCheck, colorClass: "border-emerald-200 bg-emerald-50/60", iconClass: "text-emerald-600", valueClass: "text-emerald-800" },
-    { label: "Sakit", value: summary.sakit, icon: AlertTriangle, colorClass: "border-amber-200 bg-amber-50/60", iconClass: "text-amber-600", valueClass: "text-amber-800" },
-    { label: "Izin", value: summary.izin, icon: Clock, colorClass: "border-blue-200 bg-blue-50/60", iconClass: "text-blue-600", valueClass: "text-blue-800" },
+    { label: "Sakit", value: summary.sakit, icon: AlertTriangle, colorClass: "border-orange-200 bg-orange-50/60", iconClass: "text-orange-600", valueClass: "text-orange-800" },
+    { label: "Izin", value: summary.izin, icon: Clock, colorClass: "border-yellow-200 bg-yellow-50/60", iconClass: "text-yellow-600", valueClass: "text-yellow-800" },
     { label: "Alpa", value: summary.alpa, icon: UserX, colorClass: "border-rose-200 bg-rose-50/60", iconClass: "text-rose-600", valueClass: "text-rose-800" },
   ];
 
@@ -61,8 +61,8 @@ function SummaryCards({ summary }) {
 function StatusBadge({ status }) {
   const map = {
     Hadir: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    Sakit: "bg-amber-100 text-amber-700 border-amber-200",
-    Izin: "bg-blue-100 text-blue-700 border-blue-200",
+    Sakit: "bg-orange-100 text-orange-700 border-orange-200",
+    Izin: "bg-yellow-100 text-yellow-700 border-yellow-200",
     Alpa: "bg-rose-100 text-rose-700 border-rose-200",
   };
   if (!status) return <span className="text-xs text-muted-foreground italic">Belum diinput</span>;
@@ -159,8 +159,8 @@ function AggregateTable({ rekapData, students }) {
             <TableHead className="w-28 font-bold text-foreground">NIS</TableHead>
             <TableHead className="min-w-[180px] font-bold text-foreground">Nama Siswa</TableHead>
             <TableHead className="text-center font-bold text-emerald-700">Hadir</TableHead>
-            <TableHead className="text-center font-bold text-amber-700">Sakit</TableHead>
-            <TableHead className="text-center font-bold text-blue-700">Izin</TableHead>
+            <TableHead className="text-center font-bold text-orange-700">Sakit</TableHead>
+            <TableHead className="text-center font-bold text-yellow-700">Izin</TableHead>
             <TableHead className="text-center font-bold text-rose-700">Alpa</TableHead>
             <TableHead className="text-center font-bold text-foreground">% Kehadiran</TableHead>
           </TableRow>
@@ -188,8 +188,8 @@ function AggregateTable({ rekapData, students }) {
                   <TableCell className="font-mono text-xs text-muted-foreground py-3">{s.nis}</TableCell>
                   <TableCell className="font-semibold text-foreground py-3 text-left">{s.name}</TableCell>
                   <TableCell className="text-center font-bold text-emerald-700 py-3">{hadir}</TableCell>
-                  <TableCell className="text-center font-bold text-amber-700 py-3">{sakit}</TableCell>
-                  <TableCell className="text-center font-bold text-blue-700 py-3">{izin}</TableCell>
+                  <TableCell className="text-center font-bold text-orange-700 py-3">{sakit}</TableCell>
+                  <TableCell className="text-center font-bold text-yellow-700 py-3">{izin}</TableCell>
                   <TableCell className="text-center font-bold text-rose-700 py-3">{alpa}</TableCell>
                   <TableCell className="text-center py-3"><PctBadge pct={pct} /></TableCell>
                 </TableRow>

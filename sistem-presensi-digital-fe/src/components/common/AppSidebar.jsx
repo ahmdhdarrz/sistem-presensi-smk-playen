@@ -50,10 +50,10 @@ function SidebarContent({ isCollapsed, role, onNavItemClick }) {
           </div>
           {!isCollapsed && (
             <div className="flex flex-col overflow-hidden text-left">
-              <span className="font-semibold text-sm leading-tight text-white truncate">
+              <span className="font-semibold text-sm leading-tight text-[var(--sidebar-foreground)] truncate">
                 Presensi Digital
               </span>
-              <span className="text-[11px] text-slate-300 truncate">
+              <span className="text-[11px] text-[var(--sidebar-foreground)]/80 truncate">
                 SMK Muhammadiyah 1 Playen
               </span>
             </div>
@@ -70,7 +70,7 @@ function SidebarContent({ isCollapsed, role, onNavItemClick }) {
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative",
                 isActive
                   ? "bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)] font-semibold shadow-xs"
-                  : "text-slate-300 hover:bg-[var(--sidebar-accent)] hover:text-[var(--sidebar-accent-foreground)]",
+                  : "text-[var(--sidebar-foreground)]/80 hover:bg-[var(--sidebar-accent)] hover:text-[var(--sidebar-accent-foreground)]",
                 isCollapsed && "justify-center px-2"
               );
 

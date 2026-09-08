@@ -25,3 +25,9 @@ export const deleteIzinHarian = async (id) => {
   const response = await api.delete(`/izin-harian/${id}`);
   return response.data;
 };
+
+// Update izin harian
+export const updateIzinHarian = async (id, payload) => {
+  const response = await api.put(`/izin-harian/${id}`, payload);
+  return response.data;
+};

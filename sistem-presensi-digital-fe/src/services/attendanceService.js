@@ -31,6 +31,16 @@ export async function getAbsensiHarian(kelasId, tanggal) {
   };
 }
 
+export async function updateAbsensi(id, payload) {
+  const res = await api.put(`/absensi/${id}`, payload);
+  return res.data;
+}
+
+export async function deleteAbsensi(id) {
+  const res = await api.delete(`/absensi/${id}`);
+  return res.data;
+}
+
 export async function exportAbsensiExcel(params) {
   const res = await api.get("/absensi/export/excel", {
     params,

@@ -89,7 +89,7 @@ function Login() {
                 <h2 className="text-lg font-bold tracking-tight text-white my-0">
                   SMK Muhammadiyah 1 Playen
                 </h2>
-                <p className="text-xs text-amber-300 font-medium">
+                <p className="text-xs text-[var(--accent)] font-medium">
                   Sistem Presensi Digital
                 </p>
               </div>

@@ -53,7 +53,7 @@ function Dashboard() {
     };
   }, [filters]);
 
-  if (loading) {
+  if (loading && !raw) {
     return (
       <div className="flex items-center justify-center py-24 gap-2 text-muted-foreground">
         <Loader2 className="size-5 animate-spin" />

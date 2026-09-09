@@ -95,33 +95,30 @@ body {
   flex-direction: column;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 600;
-  color: var(--foreground);
-}
+@layer base {
+  h1,
+  h2 {
+    font-family: var(--heading);
+    font-weight: 600;
+    color: var(--foreground);
+  }
 
-h1 {
-  font-size: 36px;
-  letter-spacing: -0.8px;
-  margin: 16px 0;
-  @media (max-width: 1024px) {
-    font-size: 28px;
-    margin: 12px 0;
+  h1 {
+    font-size: 36px;
+    letter-spacing: -0.8px;
+    margin: 16px 0;
   }
-}
-h2 {
-  font-size: 20px;
-  line-height: 120%;
-  letter-spacing: -0.2px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 18px;
+
+  h2 {
+    font-size: 20px;
+    line-height: 120%;
+    letter-spacing: -0.2px;
+    margin: 0 0 8px;
   }
-}
-p {
-  margin: 0;
+
+  p {
+    margin: 0;
+  }
 }
 
 code,

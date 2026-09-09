@@ -195,39 +195,72 @@ function AttendanceInput() {
   // SUMMARY — computed from either local records (create mode) or existing records (read mode)
   // ═══════════════════════════════════════════════════════════════════════════
   const summary = useMemo(() => {
-    let hadir = 0, alpa = 0, izin = 0, sakit = 0, belumDiisi = 0;
+    let hadir = 0, alpa = 0, izin = 0, sakit = 0, belumDiisi = 0, terlambat = 0;
 
     if (hasExistingData) {
       // Read mode — count from existing API data
       existingRecords.forEach((r) => {
         const st = (STATUS_LABEL[r.status] || r.status || "").toLowerCase();
-        if (st === "hadir") hadir++;
+        if (st === "hadir") {
+          hadir++;
+          if (r.terlambat) terlambat++;
+        }
         else if (st === "alpa") alpa++;
         else if (st === "izin") izin++;
         else if (st === "sakit") sakit++;
       });
-      return { total: students.length, hadir, alpa, izin, sakit, belumDiisi: 0 };
+      return { total: students.length, hadir, alpa, izin, sakit, terlambat, belumDiisi: 0 };
     }
 
     // Create mode — count from local records
     students.forEach((s) => {
       const rec = records[s.id];
       if (!rec || !rec.status) belumDiisi++;
-      else if (rec.status === "Hadir") hadir++;
+      else if (rec.status === "Hadir") {
+        hadir++;
+        if (rec.terlambat && selectedSession.toLowerCase() === "pagi") terlambat++;
+      }
       else if (rec.status === "Alpa") alpa++;
       else if (rec.status === "Izin") izin++;
       else if (rec.status === "Sakit") sakit++;
     });
-    return { total: students.length, hadir, alpa, izin, sakit, belumDiisi };
-  }, [students, records, existingRecords, hasExistingData]);
+    return { total: students.length, hadir, alpa, izin, sakit, terlambat, belumDiisi };
+  }, [students, records, existingRecords, hasExistingData, selectedSession]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // CREATE MODE HANDLERS (unchanged from existing)
   // ═══════════════════════════════════════════════════════════════════════════
   const handleStatusChange = (studentId, newStatus) => {
     if (hasExistingData) return;
-    setRecords((prev) => ({ ...prev, [studentId]: { ...prev[studentId], status: newStatus } }));
+    setRecords((prev) => {
+      const current = prev[studentId] || {};
+      const isPagi = selectedSession.toLowerCase() === "pagi";
+      const isHadir = newStatus === "Hadir";
+      return {
+        ...prev,
+        [studentId]: {
+          ...current,
+          status: newStatus,
+          terlambat: isPagi && isHadir ? Boolean(current.terlambat) : false,
+        },
+      };
+    });
     if (validationError) setValidationError("");
+  };
+
+  const handleToggleTerlambat = (studentId) => {
+    if (hasExistingData) return;
+    setRecords((prev) => {
+      const current = prev[studentId] || {};
+      if (current.status !== "Hadir" || selectedSession.toLowerCase() !== "pagi") return prev;
+      return {
+        ...prev,
+        [studentId]: {
+          ...current,
+          terlambat: !current.terlambat,
+        },
+      };
+    });
   };
 
   const handleNoteChange = (studentId, noteText) => {
@@ -278,11 +311,16 @@ function AttendanceInput() {
       kelas_id: Number(classInfo.id),
       sesi: selectedSession.toLowerCase(),
       tanggal: selectedDate,
-      absensi: students.map((s) => ({
-        siswa_id: s.id,
-        status: (records[s.id]?.status || "Hadir").toLowerCase(),
-        keterangan: records[s.id]?.note || null,
-      })),
+      absensi: students.map((s) => {
+        const recStatus = (records[s.id]?.status || "Hadir").toLowerCase();
+        const isLate = Boolean(selectedSession.toLowerCase() === "pagi" && recStatus === "hadir" && records[s.id]?.terlambat);
+        return {
+          siswa_id: s.id,
+          status: recStatus,
+          terlambat: isLate,
+          keterangan: records[s.id]?.note || null,
+        };
+      }),
     };
 
     try {
@@ -307,6 +345,7 @@ function AttendanceInput() {
     setEditingRowId(studentId);
     setEditDraft({
       status: STATUS_LABEL[existing.status] || existing.status || "Hadir",
+      terlambat: Boolean(existing.terlambat && selectedSession.toLowerCase() === "pagi"),
       note: existing.keterangan || "",
     });
   };
@@ -321,10 +360,14 @@ function AttendanceInput() {
     const existing = existingRecords?.find((r) => r.siswa_id === editingRowId);
     if (!existing) return;
 
+    const newStatusStr = editDraft.status.toLowerCase();
+    const isLate = Boolean(selectedSession.toLowerCase() === "pagi" && newStatusStr === "hadir" && editDraft.terlambat);
+
     setIsUpdating(true);
     try {
       await updateAbsensi(existing.id, {
-        status: editDraft.status.toLowerCase(),
+        status: newStatusStr,
+        terlambat: isLate,
         keterangan: editDraft.note || null,
       });
       setEditingRowId(null);
@@ -396,17 +439,24 @@ function AttendanceInput() {
     if (hasExistingData) {
       const found = findExistingRecord(studentId);
       if (found) {
+        const stLabel = STATUS_LABEL[found.status] || found.status;
+        const isLate = Boolean(selectedSession.toLowerCase() === "pagi" && (found.status || "").toLowerCase() === "hadir" && found.terlambat);
         return {
-          status: STATUS_LABEL[found.status] || found.status,
+          status: stLabel,
           note: found.keterangan || "",
           absensiId: found.id,
-          // Future: terlambat field from backend
-          // terlambat: found.terlambat || false,
+          terlambat: isLate,
         };
       }
-      return { status: null, note: "", absensiId: null };
+      return { status: null, note: "", absensiId: null, terlambat: false };
     }
-    return records[studentId] || { status: null, note: "" };
+    const localRec = records[studentId] || { status: null, note: "" };
+    const isLate = Boolean(selectedSession.toLowerCase() === "pagi" && localRec.status === "Hadir" && localRec.terlambat);
+    return {
+      status: localRec.status,
+      note: localRec.note || "",
+      terlambat: isLate,
+    };
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -573,7 +623,7 @@ function AttendanceInput() {
       ) : (
         <>
           {/* ─── Summary cards ─── */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
             <div className="p-4 rounded-xl border border-border bg-card shadow-xs text-left">
               <div className="flex items-center justify-between text-muted-foreground">
                 <span className="text-xs font-semibold uppercase">Total Siswa</span>
@@ -587,6 +637,13 @@ function AttendanceInput() {
                 <UserCheck className="size-4" />
               </div>
               <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300 mt-2 tracking-tight">{summary.hadir}</p>
+            </div>
+            <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-900 text-left">
+              <div className="flex items-center justify-between text-amber-700 dark:text-amber-400">
+                <span className="text-xs font-semibold uppercase">Terlambat</span>
+                <Clock className="size-4" />
+              </div>
+              <p className="text-2xl font-bold text-amber-800 dark:text-amber-300 mt-2 tracking-tight">{summary.terlambat}</p>
             </div>
             <div className="p-4 rounded-xl border border-yellow-200 bg-yellow-50/50 dark:bg-yellow-950/20 dark:border-yellow-900 text-left">
               <div className="flex items-center justify-between text-yellow-700 dark:text-yellow-400">
@@ -609,22 +666,22 @@ function AttendanceInput() {
               </div>
               <p className="text-2xl font-bold text-rose-800 dark:text-rose-300 mt-2 tracking-tight">{summary.alpa}</p>
             </div>
-            {!hasExistingData && (
-              <div
-                className={cn(
-                  "p-4 rounded-xl border text-left transition-all",
-                  summary.belumDiisi > 0
-                    ? "border-amber-400 bg-amber-100/50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200"
-                    : "border-border bg-card text-muted-foreground"
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase">Belum Diisi</span>
-                  <Sparkles className="size-4 text-amber-600" />
-                </div>
-                <p className="text-2xl font-bold mt-2 tracking-tight">{summary.belumDiisi}</p>
+            <div
+              className={cn(
+                "p-4 rounded-xl border text-left transition-all",
+                !hasExistingData && summary.belumDiisi > 0
+                  ? "border-amber-400 bg-amber-100/50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200"
+                  : "border-border bg-card text-muted-foreground"
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase">Belum Diisi</span>
+                <Sparkles className="size-4 text-amber-600" />
               </div>
-            )}
+              <p className="text-2xl font-bold mt-2 tracking-tight">
+                {hasExistingData ? 0 : summary.belumDiisi}
+              </p>
+            </div>
           </div>
 
           {/* ─── Student attendance table ─── */}
@@ -707,19 +764,19 @@ function AttendanceInput() {
                             <TableCell className="text-center font-medium text-muted-foreground py-3">{index + 1}</TableCell>
                             <TableCell className="font-mono text-xs text-muted-foreground py-3">{student.nis}</TableCell>
                             <TableCell className="font-semibold text-foreground py-3 text-left">
-                              <div className="flex items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <span>{student.name}</span>
                                 {isUnfilled && (
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
                                     Belum diisi
                                   </span>
                                 )}
-                                {/* Future: Terlambat badge - will display when backend provides `terlambat` field */}
-                                {/* {hasExistingData && existingRow?.terlambat && displayRec.status === "Hadir" && (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
-                                    Terlambat
+                                {displayRec.status === "Hadir" && displayRec.terlambat && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800 shadow-2xs">
+                                    <Clock className="size-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                                    <span>Terlambat</span>
                                   </span>
-                                )} */}
+                                )}
                               </div>
                             </TableCell>
 
@@ -727,62 +784,106 @@ function AttendanceInput() {
                             <TableCell className="py-2.5 text-center">
                               {isEditingThis ? (
                                 /* ── EDIT MODE: status selector ── */
-                                <div className="inline-flex items-center p-1 rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/10 gap-1">
-                                  {STATUS_OPTIONS.map((label) => {
-                                    const colorMap = {
-                                      Hadir: "bg-emerald-600",
-                                      Izin: "bg-yellow-500",
-                                      Sakit: "bg-orange-500",
-                                      Alpa: "bg-rose-600",
-                                    };
-                                    return (
-                                      <button
-                                        key={label}
-                                        type="button"
-                                        onClick={() => setEditDraft((prev) => ({ ...prev, status: label }))}
-                                        className={cn(
-                                          "px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer",
-                                          editDraft.status === label
-                                            ? `${colorMap[label]} ${label === "Izin" ? "text-yellow-950" : "text-white"} shadow-xs`
-                                            : "text-muted-foreground"
-                                        )}
-                                      >
-                                        {label}
-                                      </button>
-                                    );
-                                  })}
+                                <div className="flex flex-col items-center gap-1.5">
+                                  <div className="inline-flex items-center p-1 rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/10 gap-1">
+                                    {STATUS_OPTIONS.map((label) => {
+                                      const colorMap = {
+                                        Hadir: "bg-emerald-600",
+                                        Izin: "bg-yellow-500",
+                                        Sakit: "bg-orange-500",
+                                        Alpa: "bg-rose-600",
+                                      };
+                                      return (
+                                        <button
+                                          key={label}
+                                          type="button"
+                                          onClick={() => setEditDraft((prev) => ({
+                                            ...prev,
+                                            status: label,
+                                            terlambat: label === "Hadir" && selectedSession.toLowerCase() === "pagi" ? prev.terlambat : false
+                                          }))}
+                                          className={cn(
+                                            "px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer",
+                                            editDraft.status === label
+                                              ? `${colorMap[label]} ${label === "Izin" ? "text-yellow-950" : "text-white"} shadow-xs`
+                                              : "text-muted-foreground"
+                                          )}
+                                        >
+                                          {label}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                  {editDraft.status === "Hadir" && selectedSession.toLowerCase() === "pagi" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditDraft((prev) => ({ ...prev, terlambat: !prev.terlambat }))}
+                                      className={cn(
+                                        "px-2.5 py-1 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border shadow-2xs mt-0.5",
+                                        editDraft.terlambat
+                                          ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                                          : "bg-amber-50/80 text-amber-800 border-amber-300 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800"
+                                      )}
+                                    >
+                                      <Clock className="size-3.5 shrink-0" />
+                                      <span>{editDraft.terlambat ? "Terlambat" : "+ Tandai Terlambat"}</span>
+                                    </button>
+                                  )}
                                 </div>
                               ) : (
                                 /* ── READ / CREATE MODE: status display/selector ── */
-                                <div className={cn(
-                                  "inline-flex items-center p-1 rounded-lg border border-border bg-slate-100/60 dark:bg-slate-800/60 gap-1",
-                                  hasExistingData && "opacity-70"
-                                )}>
-                                  {STATUS_OPTIONS.map((label) => {
-                                    const colorMap = {
-                                      Hadir: "bg-emerald-600",
-                                      Izin: "bg-yellow-500",
-                                      Sakit: "bg-orange-500",
-                                      Alpa: "bg-rose-600",
-                                    };
-                                    return (
-                                      <button
-                                        key={label}
-                                        type="button"
-                                        disabled={hasExistingData}
-                                        onClick={() => handleStatusChange(student.id, label)}
-                                        className={cn(
-                                          "px-3 py-1.5 rounded-md text-xs font-bold transition-all",
-                                          displayRec.status === label
-                                            ? `${colorMap[label]} ${label === "Izin" ? "text-yellow-950" : "text-white"} shadow-xs`
-                                            : "text-muted-foreground",
-                                          hasExistingData ? "cursor-not-allowed" : "cursor-pointer"
-                                        )}
-                                      >
-                                        {label}
-                                      </button>
-                                    );
-                                  })}
+                                <div className="flex flex-col items-center gap-1.5">
+                                  <div className={cn(
+                                    "inline-flex items-center p-1 rounded-lg border border-border bg-slate-100/60 dark:bg-slate-800/60 gap-1",
+                                    hasExistingData && "opacity-70"
+                                  )}>
+                                    {STATUS_OPTIONS.map((label) => {
+                                      const colorMap = {
+                                        Hadir: "bg-emerald-600",
+                                        Izin: "bg-yellow-500",
+                                        Sakit: "bg-orange-500",
+                                        Alpa: "bg-rose-600",
+                                      };
+                                      return (
+                                        <button
+                                          key={label}
+                                          type="button"
+                                          disabled={hasExistingData}
+                                          onClick={() => handleStatusChange(student.id, label)}
+                                          className={cn(
+                                            "px-3 py-1.5 rounded-md text-xs font-bold transition-all",
+                                            displayRec.status === label
+                                              ? `${colorMap[label]} ${label === "Izin" ? "text-yellow-950" : "text-white"} shadow-xs`
+                                              : "text-muted-foreground",
+                                            hasExistingData ? "cursor-not-allowed" : "cursor-pointer"
+                                          )}
+                                        >
+                                          {label}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                  {!hasExistingData && displayRec.status === "Hadir" && selectedSession.toLowerCase() === "pagi" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleTerlambat(student.id)}
+                                      className={cn(
+                                        "px-2.5 py-1 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border shadow-2xs mt-0.5",
+                                        displayRec.terlambat
+                                          ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                                          : "bg-amber-50/80 text-amber-800 border-amber-300 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800"
+                                      )}
+                                    >
+                                      <Clock className="size-3.5 shrink-0" />
+                                      <span>{displayRec.terlambat ? "Terlambat" : "+ Tandai Terlambat"}</span>
+                                    </button>
+                                  )}
+                                  {hasExistingData && displayRec.status === "Hadir" && displayRec.terlambat && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                      <Clock className="size-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                                      <span>Terlambat</span>
+                                    </span>
+                                  )}
                                 </div>
                               )}
                             </TableCell>

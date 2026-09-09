@@ -57,6 +57,16 @@ export function AttendanceTrendChart({ isTeacher, data }) {
               />
               <Line
                 type="monotone"
+                dataKey="Terlambat"
+                name="Terlambat"
+                stroke="#F59E0B"
+                strokeWidth={2}
+                strokeDasharray="5 3"
+                dot={{ r: 3, fill: "#F59E0B" }}
+                activeDot={{ r: 5 }}
+              />
+              <Line
+                type="monotone"
                 dataKey="Alpa"
                 name="Tanpa Keterangan (Alpa)"
                 stroke="#EF4444"

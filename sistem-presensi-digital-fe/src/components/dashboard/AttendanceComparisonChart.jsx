@@ -44,7 +44,9 @@ export function AttendanceComparisonChart({ isTeacher, data }) {
                 <XAxis dataKey="category" stroke="#64748B" fontSize={12} tickLine={false} />
                 <YAxis stroke="#64748B" fontSize={12} tickLine={false} />
                 <Tooltip content={<CustomTooltip />} />
+                <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
                 <Bar dataKey="count" name="Jumlah Siswa" fill="#1F5F99" radius={[4, 4, 0, 0]} barSize={36} />
+                <Bar dataKey="Terlambat" name="Terlambat" fill="#F59E0B" radius={[4, 4, 0, 0]} barSize={36} />
               </BarChart>
             ) : (
               <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -53,8 +55,9 @@ export function AttendanceComparisonChart({ isTeacher, data }) {
                 <YAxis stroke="#64748B" fontSize={12} tickLine={false} />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
-                <Bar dataKey="Hadir" fill="#1F5F99" radius={[4, 4, 0, 0]} barSize={20} />
-                <Bar dataKey="TidakHadir" name="Tidak Hadir" fill="#EAB308" radius={[4, 4, 0, 0]} barSize={20} />
+                <Bar dataKey="Hadir" fill="#1F5F99" radius={[4, 4, 0, 0]} barSize={16} />
+                <Bar dataKey="Terlambat" name="Terlambat" fill="#F59E0B" radius={[4, 4, 0, 0]} barSize={16} />
+                <Bar dataKey="TidakHadir" name="Tidak Hadir" fill="#EAB308" radius={[4, 4, 0, 0]} barSize={16} />
               </BarChart>
             )}
           </ResponsiveContainer>

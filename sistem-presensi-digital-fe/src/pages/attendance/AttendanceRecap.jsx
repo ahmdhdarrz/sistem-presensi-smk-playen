@@ -22,7 +22,7 @@ const PERIODS = [
   { id: "daily", label: "Harian", Icon: Calendar },
   { id: "weekly", label: "Mingguan", Icon: CalendarDays },
   { id: "monthly", label: "Bulanan", Icon: CalendarRange },
-  { id: "yearly", label: "Tahunan", Icon: CalendarClock },
+  { id: "yearly", label: "Semesteran", Icon: CalendarClock },
 ];
 
 function todayStr() {
@@ -38,13 +38,14 @@ function SummaryCards({ summary }) {
   const cards = [
     { label: "Total Siswa", value: summary.total, icon: Users, colorClass: "border-border bg-card", iconClass: "text-primary", valueClass: "text-foreground" },
     { label: "Hadir", value: summary.hadir, icon: UserCheck, colorClass: "border-emerald-200 bg-emerald-50/60", iconClass: "text-emerald-600", valueClass: "text-emerald-800" },
+    { label: "Terlambat", value: summary.terlambat, icon: Clock, colorClass: "border-amber-200 bg-amber-50/60", iconClass: "text-amber-600", valueClass: "text-amber-800" },
     { label: "Sakit", value: summary.sakit, icon: AlertTriangle, colorClass: "border-orange-200 bg-orange-50/60", iconClass: "text-orange-600", valueClass: "text-orange-800" },
     { label: "Izin", value: summary.izin, icon: Clock, colorClass: "border-yellow-200 bg-yellow-50/60", iconClass: "text-yellow-600", valueClass: "text-yellow-800" },
     { label: "Alpa", value: summary.alpa, icon: UserX, colorClass: "border-rose-200 bg-rose-50/60", iconClass: "text-rose-600", valueClass: "text-rose-800" },
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
       {cards.map(({ label, value, icon: Icon, colorClass, iconClass, valueClass }) => (
         <div key={label} className={cn("p-4 rounded-xl border shadow-xs text-left", colorClass)}>
           <div className="flex items-center justify-between">
@@ -58,7 +59,7 @@ function SummaryCards({ summary }) {
   );
 }
 
-function StatusBadge({ status }) {
+function StatusBadge({ status, isLate = false }) {
   const map = {
     Hadir: "bg-emerald-100 text-emerald-700 border-emerald-200",
     Sakit: "bg-orange-100 text-orange-700 border-orange-200",
@@ -67,9 +68,17 @@ function StatusBadge({ status }) {
   };
   if (!status) return <span className="text-xs text-muted-foreground italic">Belum diinput</span>;
   return (
-    <Badge className={cn("text-xs font-bold border hover:bg-inherit", map[status] || "bg-muted text-muted-foreground")}>
-      {status}
-    </Badge>
+    <div className="inline-flex items-center justify-center gap-1.5 flex-wrap">
+      <Badge className={cn("text-xs font-bold border hover:bg-inherit", map[status] || "bg-muted text-muted-foreground")}>
+        {status}
+      </Badge>
+      {status === "Hadir" && isLate && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+          <Clock className="size-3 text-amber-600 dark:text-amber-400 shrink-0" />
+          <span>Terlambat</span>
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -128,7 +137,12 @@ function DailyTable({ pagiRecords, soreRecords, students }) {
                   <TableCell className="text-center text-muted-foreground font-medium py-3">{idx + 1}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground py-3">{s.nis}</TableCell>
                   <TableCell className="font-semibold text-foreground py-3 text-left">{s.name}</TableCell>
-                  <TableCell className="text-center py-3"><StatusBadge status={capitalize(pagi?.status)} /></TableCell>
+                  <TableCell className="text-center py-3">
+                    <StatusBadge
+                      status={capitalize(pagi?.status)}
+                      isLate={Boolean(pagi?.terlambat)}
+                    />
+                  </TableCell>
                   <TableCell className="text-center py-3"><StatusBadge status={capitalize(sore?.status)} /></TableCell>
                 </TableRow>
               );
@@ -159,6 +173,7 @@ function AggregateTable({ rekapData, students }) {
             <TableHead className="w-28 font-bold text-foreground">NIS</TableHead>
             <TableHead className="min-w-[180px] font-bold text-foreground">Nama Siswa</TableHead>
             <TableHead className="text-center font-bold text-emerald-700">Hadir</TableHead>
+            <TableHead className="text-center font-bold text-amber-700">Terlambat</TableHead>
             <TableHead className="text-center font-bold text-orange-700">Sakit</TableHead>
             <TableHead className="text-center font-bold text-yellow-700">Izin</TableHead>
             <TableHead className="text-center font-bold text-rose-700">Alpa</TableHead>
@@ -176,6 +191,7 @@ function AggregateTable({ rekapData, students }) {
             students.map((s, idx) => {
               const d = aggMap[s.id];
               const hadir = d?.hadir || 0;
+              const terlambat = d?.terlambat || 0;
               const sakit = d?.sakit || 0;
               const izin = d?.izin || 0;
               const alpa = d?.alpa || 0;
@@ -188,6 +204,7 @@ function AggregateTable({ rekapData, students }) {
                   <TableCell className="font-mono text-xs text-muted-foreground py-3">{s.nis}</TableCell>
                   <TableCell className="font-semibold text-foreground py-3 text-left">{s.name}</TableCell>
                   <TableCell className="text-center font-bold text-emerald-700 py-3">{hadir}</TableCell>
+                  <TableCell className="text-center font-bold text-amber-700 py-3">{terlambat}</TableCell>
                   <TableCell className="text-center font-bold text-orange-700 py-3">{sakit}</TableCell>
                   <TableCell className="text-center font-bold text-yellow-700 py-3">{izin}</TableCell>
                   <TableCell className="text-center font-bold text-rose-700 py-3">{alpa}</TableCell>
@@ -309,25 +326,29 @@ function AttendanceRecap() {
     const total = students.length;
 
     if (activePeriod === "daily") {
-      let hadir = 0, sakit = 0, izin = 0, alpa = 0;
+      let hadir = 0, sakit = 0, izin = 0, alpa = 0, terlambat = 0;
       const combined = [...dailyPagi, ...dailySore];
       combined.forEach((r) => {
-        if (r.status === "hadir") hadir++;
+        if (r.status === "hadir") {
+          hadir++;
+          if (r.terlambat) terlambat++;
+        }
         else if (r.status === "sakit") sakit++;
         else if (r.status === "izin") izin++;
         else if (r.status === "alpa") alpa++;
       });
-      return { total, hadir, sakit, izin, alpa };
+      return { total, hadir, sakit, izin, alpa, terlambat };
     }
 
-    let hadir = 0, sakit = 0, izin = 0, alpa = 0;
+    let hadir = 0, sakit = 0, izin = 0, alpa = 0, terlambat = 0;
     rekapData.forEach((d) => {
       hadir += d.hadir || 0;
       sakit += d.sakit || 0;
       izin += d.izin || 0;
       alpa += d.alpa || 0;
+      terlambat += d.terlambat || 0;
     });
-    return { total, hadir, sakit, izin, alpa };
+    return { total, hadir, sakit, izin, alpa, terlambat };
   }, [activePeriod, students, dailyPagi, dailySore, rekapData]);
 
   const years = [2025, 2026, 2027];

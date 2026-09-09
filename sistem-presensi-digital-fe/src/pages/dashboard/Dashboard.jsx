@@ -6,6 +6,7 @@ import { SessionStatus } from "@/components/dashboard/SessionStatus";
 import { AttendanceComparisonChart } from "@/components/dashboard/AttendanceComparisonChart";
 import { AttendanceTrendChart } from "@/components/dashboard/AttendanceTrendChart";
 import { FrequentAbsenceTable } from "@/components/dashboard/FrequentAbsenceTable";
+import { FrequentLateTable } from "@/components/dashboard/FrequentLateTable";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
@@ -85,18 +86,21 @@ function Dashboard() {
             { title: "Total Siswa Terdaftar", value: String(s.total_siswa), description: "Seluruh kelas di SMK M 1 Playen", icon: "Users" },
             { title: "Kehadiran Hari Ini", value: String(s.hadir_hari_ini), description: `${pct(s.hadir_hari_ini, s.total_siswa)} total kehadiran siswa`, icon: "UserCheck" },
             { title: "Siswa Tidak Hadir", value: String(tidakHadir), description: `Izin: ${s.izin} | Sakit: ${s.sakit} | Alpa: ${s.alpa}`, icon: "UserX" },
+            { title: "Siswa Terlambat", value: String(s.terlambat || 0), description: "Hadir namun terlambat (Sesi Pagi)", icon: "Clock" },
             { title: "Status Akses", value: "View Only", description: "Akses informasi & rekapitulasi", icon: "Eye" },
           ]
         : [
             { title: "Total Siswa Sekolah", value: String(s.total_siswa), description: `Terdaftar di ${s.total_kelas} kelas`, icon: "Users" },
             { title: "Hadir Hari Ini", value: String(s.hadir_hari_ini), description: `${pct(s.hadir_hari_ini, s.total_siswa)} tingkat kehadiran sekolah`, icon: "UserCheck" },
             { title: "Siswa Tidak Hadir", value: String(tidakHadir), description: `Izin: ${s.izin} | Sakit: ${s.sakit} | Alpa: ${s.alpa}`, icon: "UserX" },
+            { title: "Siswa Terlambat", value: String(s.terlambat || 0), description: "Hadir namun terlambat (Sesi Pagi)", icon: "Clock" },
             { title: "Status Presensi Kelas", value: `${s.kelas_sudah_input} / ${s.total_kelas} Kelas`, description: "Kelas telah menginput presensi harian", icon: "School" },
           ],
       sessionStatus: raw.session_status,
-      comparisonData: raw.comparison_data,
-      trendData: raw.trend_data,
-      frequentAbsences: raw.frequent_absences,
+      comparisonData: (raw.comparison_data || []).map((item) => ({ ...item, Terlambat: item.Terlambat || 0 })),
+      trendData: (raw.trend_data || []).map((item) => ({ ...item, Terlambat: item.Terlambat || 0 })),
+      frequentAbsences: raw.frequent_absences || [],
+      frequentLates: raw.frequent_lates || [],
       recentLogs: raw.recent_logs || [],
     };
   } else if (userIsWali) {
@@ -107,6 +111,7 @@ function Dashboard() {
         { title: "Total Siswa Kelas", value: String(s.total_siswa), description: `Terdaftar di kelas ${classNameInfo}`, icon: "Users" },
         { title: "Hadir Hari Ini", value: String(s.hadir_hari_ini), description: `${pct(s.hadir_hari_ini, s.total_siswa)} tingkat kehadiran hari ini`, icon: "UserCheck" },
         { title: "Siswa Tidak Hadir", value: String(s.izin + s.sakit + s.alpa), description: `Sakit: ${s.sakit} | Izin: ${s.izin} | Alpa: ${s.alpa}`, icon: "UserX" },
+        { title: "Siswa Terlambat", value: String(s.terlambat || 0), description: "Hadir namun terlambat (Sesi Pagi)", icon: "Clock" },
         {
           title: "Status Presensi Hari Ini",
           value: `Pagi: ${s.sesi_pagi ? "✓" : "○"} | Sore: ${s.sesi_sore ? "✓" : "○"}`,
@@ -117,9 +122,10 @@ function Dashboard() {
         },
       ],
       sessionStatus: raw.session_status,
-      comparisonData: raw.comparison_data,
-      trendData: raw.trend_data,
-      frequentAbsences: raw.frequent_absences,
+      comparisonData: (raw.comparison_data || []).map((item) => ({ ...item, Terlambat: item.Terlambat || 0 })),
+      trendData: (raw.trend_data || []).map((item) => ({ ...item, Terlambat: item.Terlambat || 0 })),
+      frequentAbsences: raw.frequent_absences || [],
+      frequentLates: raw.frequent_lates || [],
     };
   }
 
@@ -263,8 +269,9 @@ function Dashboard() {
             <div className="lg:col-span-7">
               <AttendanceTrendChart isTeacher={userIsWali} data={dashboardData.trendData} />
             </div>
-            <div className="lg:col-span-5">
+            <div className="lg:col-span-5 flex flex-col gap-6">
               <FrequentAbsenceTable isTeacher={userIsWali} data={dashboardData.frequentAbsences} />
+              <FrequentLateTable isTeacher={userIsWali} data={dashboardData.frequentLates} />
             </div>
           </div>
         </>

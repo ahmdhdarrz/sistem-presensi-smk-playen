@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, UserCheck, UserX, School, ClipboardCheck, Eye } from "lucide-react";
+import { Users, UserCheck, UserX, School, ClipboardCheck, Eye, Clock } from "lucide-react";
 
 const iconMap = {
   Users: Users,
@@ -9,6 +9,7 @@ const iconMap = {
   School: School,
   ClipboardCheck: ClipboardCheck,
   Eye: Eye,
+  Clock: Clock,
 };
 
 export function StatCard({ title, value, description, icon }) {
@@ -41,8 +42,18 @@ export function StatCard({ title, value, description, icon }) {
 }
 
 export function DashboardStats({ stats }) {
+  const count = stats?.length || 4;
+
+  // Grid columns: snap to nearest sensible breakpoint based on count
+  const gridCols =
+    count <= 4
+      ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+      : count === 5
+      ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
+      : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6";
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className={`grid ${gridCols} gap-4`}>
       {stats.map((stat, idx) => (
         <StatCard
           key={idx}

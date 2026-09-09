@@ -175,40 +175,43 @@ function Dashboard() {
   }
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-4 pb-6">
       <PageHeader title={headerTitle} description={headerDescription} actions={headerActions} />
 
+      {/* Filter row */}
       <DashboardFilters role={role} onFilterChange={setFilters} />
 
+      {/* Wali Kelas info banner */}
       {userIsWali && (
-        <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-between text-left shadow-2xs">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center size-9 rounded-lg bg-primary text-primary-foreground shrink-0 font-bold">
-              <School className="size-5" />
-            </div>
-            <div>
-              <p className="font-bold text-sm text-foreground">
-                Anda Login sebagai Wali Kelas {classNameInfo}
-              </p>
-              <p className="text-xs text-muted-foreground font-medium">
-                Data statistik dan akses input pada dashboard ini terfokus khusus untuk kelas {classNameInfo}.
-              </p>
-            </div>
+        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-primary/8 border border-primary/20 shadow-2xs">
+          <div className="flex items-center justify-center size-7 rounded-md bg-primary text-primary-foreground shrink-0">
+            <School className="size-4" />
           </div>
-          <span className="hidden sm:inline-flex px-3 py-1 rounded-full text-xs font-bold bg-primary text-white">
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-xs sm:text-sm text-foreground truncate">
+              Wali Kelas {classNameInfo}
+            </p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground font-medium hidden sm:block">
+              Data terfokus khusus untuk kelas {classNameInfo}.
+            </p>
+          </div>
+          <span className="hidden sm:inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary text-white shrink-0">
             Wali Kelas
           </span>
         </div>
       )}
 
+      {/* ── KPI Scorecard ── */}
       <DashboardStats stats={dashboardData.stats} />
 
+      {/* ── Content Area ── */}
       {userIsMapel ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        /* Guru Mapel: Aktivitas log + trend side by side */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           <div className="lg:col-span-5">
             <Card className="h-full border-border text-left">
-              <CardHeader className="pb-3 border-b border-border/50">
-                <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+              <CardHeader className="pb-2 pt-4 px-4 border-b border-border/50">
+                <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
                   <Clock className="size-4 text-primary" />
                   <span>Aktivitas Input Presensi Terbaru</span>
                 </CardTitle>
@@ -221,20 +224,20 @@ function Dashboard() {
                 ) : (
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-slate-50/70 dark:bg-slate-800/50">
-                        <TableHead className="font-bold text-foreground">Waktu</TableHead>
-                        <TableHead className="font-bold text-foreground">Kelas</TableHead>
-                        <TableHead className="font-bold text-foreground">Status Log</TableHead>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="font-bold text-foreground text-xs">Waktu</TableHead>
+                        <TableHead className="font-bold text-foreground text-xs">Kelas</TableHead>
+                        <TableHead className="font-bold text-foreground text-xs">Status Log</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {dashboardData.recentLogs.map((log) => (
                         <TableRow key={log.id}>
-                          <TableCell className="font-mono text-xs font-semibold text-muted-foreground py-3">
+                          <TableCell className="font-mono text-xs font-semibold text-muted-foreground py-2.5">
                             {log.time}
                           </TableCell>
-                          <TableCell className="font-bold text-foreground py-3">{log.class}</TableCell>
-                          <TableCell className="text-xs font-medium py-3 text-emerald-700 dark:text-emerald-400">
+                          <TableCell className="font-bold text-foreground py-2.5 text-xs">{log.class}</TableCell>
+                          <TableCell className="text-xs font-medium py-2.5 text-emerald-700 dark:text-emerald-400">
                             {log.status}
                           </TableCell>
                         </TableRow>
@@ -245,39 +248,55 @@ function Dashboard() {
               </CardContent>
             </Card>
           </div>
-
           <div className="lg:col-span-7">
             <AttendanceTrendChart isTeacher={false} data={dashboardData.trendData} />
           </div>
         </div>
       ) : (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-5">
-              <SessionStatus
-                isTeacher={userIsWali}
-                sessionData={dashboardData.sessionStatus}
-                classNameInfo={classNameInfo}
-              />
-            </div>
-            <div className="lg:col-span-7">
-              <AttendanceComparisonChart isTeacher={userIsWali} data={dashboardData.comparisonData} />
-            </div>
+        /*
+         * Admin & Wali Kelas layout:
+         *
+         * Desktop: 2-column grid
+         *   LEFT  (col-span-7): Monitoring → Perbandingan → Tren (stacked)
+         *   RIGHT (col-span-5): Terlambat → Alpa (stacked, sticky-like)
+         *
+         * Mobile: single column, left content first then right content
+         */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          {/* ── LEFT COLUMN ── */}
+          <div className="lg:col-span-7 flex flex-col gap-4 min-w-0">
+            {/* 1. Monitoring Input Presensi Per Kelas */}
+            <SessionStatus
+              isTeacher={userIsWali}
+              sessionData={dashboardData.sessionStatus}
+              classNameInfo={classNameInfo}
+            />
+
+            {/* 2. Perbandingan Kehadiran */}
+            <AttendanceComparisonChart isTeacher={userIsWali} data={dashboardData.comparisonData} />
+
+            {/* 3. Tren Kehadiran */}
+            <AttendanceTrendChart isTeacher={userIsWali} data={dashboardData.trendData} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-7">
-              <AttendanceTrendChart isTeacher={userIsWali} data={dashboardData.trendData} />
-            </div>
-            <div className="lg:col-span-5 flex flex-col gap-6">
-              <FrequentAbsenceTable isTeacher={userIsWali} data={dashboardData.frequentAbsences} />
+          {/* ── RIGHT COLUMN ── */}
+          {/* lg:self-stretch: stretch to match the left column's full height */}
+          <div className="lg:col-span-5 flex flex-col gap-4 min-w-0 lg:self-stretch">
+            {/* Each wrapper takes equal share (flex-1) of the column height */}
+            {/* 1. Sering Terlambat */}
+            <div className="flex-1 flex flex-col min-h-0">
               <FrequentLateTable isTeacher={userIsWali} data={dashboardData.frequentLates} />
             </div>
+
+            {/* 2. Sering Alpa */}
+            <div className="flex-1 flex flex-col min-h-0">
+              <FrequentAbsenceTable isTeacher={userIsWali} data={dashboardData.frequentAbsences} />
+            </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
 }
 
-export default Dashboard;  
+export default Dashboard;

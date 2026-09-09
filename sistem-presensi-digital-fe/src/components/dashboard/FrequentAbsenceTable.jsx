@@ -1,62 +1,56 @@
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { AlertCircle } from "lucide-react";
 
 export function FrequentAbsenceTable({ isTeacher, data }) {
   return (
-    <Card className="h-full flex flex-col justify-between">
-      <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-          <AlertCircle className="size-4 text-amber-600 shrink-0" />
-          <span>Siswa Paling Sering Alpa</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-2">
-        <div className="max-h-[230px] overflow-y-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12 text-center font-semibold text-foreground">No.</TableHead>
-                <TableHead className="font-semibold text-foreground">Nama Siswa</TableHead>
-                {!isTeacher && (
-                  <TableHead className="font-semibold text-foreground">Kelas</TableHead>
-                )}
-                <TableHead className="text-right font-semibold text-foreground">Total Alpa</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={isTeacher ? 3 : 4} className="text-center py-6 text-muted-foreground text-xs">
-                    Tidak ada siswa dengan catatan alpa berlebih.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                data.map((item, index) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="text-center font-medium text-muted-foreground py-2.5">
-                      {index + 1}
-                    </TableCell>
-                    <TableCell className="font-semibold text-foreground py-2.5">
-                      {item.name}
-                    </TableCell>
-                    {!isTeacher && (
-                      <TableCell className="text-muted-foreground py-2.5">
-                        {item.class}
-                      </TableCell>
-                    )}
-                    <TableCell className="text-right py-2.5">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800">
-                        {item.totalAlpa} Hari
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+    <Card className="flex flex-col h-full overflow-hidden">
+      <CardHeader className="pb-2 pt-4 px-4">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center size-7 rounded-lg bg-rose-100 text-rose-600 shrink-0">
+            <AlertCircle className="size-3.5" />
+          </div>
+          <CardTitle className="text-sm font-bold text-foreground">Sering Alpa</CardTitle>
         </div>
+      </CardHeader>
+
+      <CardContent className="px-3 pb-3 pt-0 flex-1 flex flex-col min-h-0">
+        {data.length === 0 ? (
+          <p className="text-center text-xs text-muted-foreground py-6">
+            Tidak ada data alpa berlebih.
+          </p>
+        ) : (
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 pr-0.5">
+            {data.map((item, index) => (
+              <div
+                key={item.id}
+                className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-muted/60 transition-colors"
+              >
+                {/* Rank badge */}
+                <span className={`flex items-center justify-center shrink-0 size-6 rounded-full text-[10px] font-bold
+                  ${index === 0 ? "bg-rose-500 text-white" :
+                    index === 1 ? "bg-rose-300 text-rose-900" :
+                    index === 2 ? "bg-rose-200 text-rose-800" :
+                    "bg-muted text-muted-foreground"}`}>
+                  {index + 1}
+                </span>
+
+                {/* Name + class */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-foreground truncate">{item.name}</p>
+                  {!isTeacher && item.class && (
+                    <p className="text-[10px] text-muted-foreground">{item.class}</p>
+                  )}
+                </div>
+
+                {/* Count badge */}
+                <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-200">
+                  {item.totalAlpa}×
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

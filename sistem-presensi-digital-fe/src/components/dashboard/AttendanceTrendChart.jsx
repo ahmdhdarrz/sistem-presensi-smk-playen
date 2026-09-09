@@ -10,16 +10,19 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { TrendingUp } from "lucide-react";
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-card border border-border p-3 rounded-lg shadow-md text-left text-xs space-y-1">
-        <p className="font-semibold text-foreground">{label}</p>
-        {payload.map((entry, index) => (
-          <p key={index} style={{ color: entry.color }} className="font-medium">
-            {entry.name}: {entry.value} siswa
-          </p>
+      <div className="bg-card border border-border p-2.5 rounded-xl shadow-lg text-left text-xs space-y-1 min-w-[130px]">
+        <p className="font-bold text-foreground text-[11px] mb-1.5">{label}</p>
+        {payload.map((entry, i) => (
+          <div key={i} className="flex items-center gap-1.5">
+            <span className="inline-block size-2 rounded-full shrink-0" style={{ background: entry.color }} />
+            <span className="text-muted-foreground">{entry.name}:</span>
+            <span className="font-semibold text-foreground ml-auto pl-2">{entry.value}</span>
+          </div>
         ))}
       </div>
     );
@@ -27,33 +30,51 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
+const CompactLegend = ({ payload }) => {
+  if (!payload?.length) return null;
+  return (
+    <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center mt-1">
+      {payload.map((entry, i) => (
+        <span key={i} className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-medium text-muted-foreground">
+          <span className="inline-block w-4 h-0.5 shrink-0" style={{ background: entry.color }} />
+          {entry.value}
+        </span>
+      ))}
+    </div>
+  );
+};
+
 export function AttendanceTrendChart({ isTeacher, data }) {
   return (
-    <Card className="h-full flex flex-col justify-between">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold text-foreground">
-          {isTeacher
-            ? "Tren Kehadiran Kelas (Minggu Ini)"
-            : "Tren Kehadiran Sekolah (Minggu Ini)"}
-        </CardTitle>
+    <Card className="flex flex-col h-full">
+      <CardHeader className="pb-2 pt-4 px-4">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center size-7 rounded-lg bg-emerald-100 text-emerald-600 shrink-0">
+            <TrendingUp className="size-3.5" />
+          </div>
+          <CardTitle className="text-sm font-bold text-foreground">
+            {isTeacher ? "Tren Kehadiran Kelas (Minggu Ini)" : "Tren Kehadiran Sekolah (Minggu Ini)"}
+          </CardTitle>
+        </div>
       </CardHeader>
-      <CardContent className="pt-2">
-        <div className="h-[230px] w-full">
+
+      <CardContent className="px-2 pb-3 pt-1 flex-1">
+        <div className="h-[210px]">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-              <XAxis dataKey="day" stroke="#64748B" fontSize={12} tickLine={false} />
-              <YAxis stroke="#64748B" fontSize={12} tickLine={false} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
+            <LineChart data={data} margin={{ top: 8, right: 12, left: -22, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="day" stroke="var(--muted-foreground)" fontSize={10} tickLine={false} />
+              <YAxis stroke="var(--muted-foreground)" fontSize={10} tickLine={false} width={30} />
+              <Tooltip content={<CustomTooltip />} cursor={{ stroke: "var(--border)", strokeWidth: 1 }} />
+              <Legend content={<CompactLegend />} />
               <Line
                 type="monotone"
                 dataKey="Hadir"
-                name="Siswa Hadir"
+                name="Hadir"
                 stroke="#1F5F99"
                 strokeWidth={2.5}
-                dot={{ r: 4, fill: "#1F5F99" }}
-                activeDot={{ r: 6 }}
+                dot={{ r: 3, fill: "#1F5F99", strokeWidth: 0 }}
+                activeDot={{ r: 5, strokeWidth: 2, stroke: "#fff" }}
               />
               <Line
                 type="monotone"
@@ -62,17 +83,18 @@ export function AttendanceTrendChart({ isTeacher, data }) {
                 stroke="#F59E0B"
                 strokeWidth={2}
                 strokeDasharray="5 3"
-                dot={{ r: 3, fill: "#F59E0B" }}
-                activeDot={{ r: 5 }}
+                dot={{ r: 2.5, fill: "#F59E0B", strokeWidth: 0 }}
+                activeDot={{ r: 4, strokeWidth: 2, stroke: "#fff" }}
               />
               <Line
                 type="monotone"
                 dataKey="Alpa"
-                name="Tanpa Keterangan (Alpa)"
+                name="Alpa"
                 stroke="#EF4444"
                 strokeWidth={2}
                 strokeDasharray="4 4"
-                dot={{ r: 3, fill: "#EF4444" }}
+                dot={{ r: 2.5, fill: "#EF4444", strokeWidth: 0 }}
+                activeDot={{ r: 4, strokeWidth: 2, stroke: "#fff" }}
               />
             </LineChart>
           </ResponsiveContainer>

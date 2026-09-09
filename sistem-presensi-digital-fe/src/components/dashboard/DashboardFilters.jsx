@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getKelas } from "@/services/dashboardService";
 import { isAdmin, isWaliKelas, isGuruMapel } from "@/utils/roles";
+import { Filter } from "lucide-react";
 
 export function DashboardFilters({ role, onFilterChange }) {
   const userIsAdmin = isAdmin(role);
@@ -31,13 +32,17 @@ export function DashboardFilters({ role, onFilterChange }) {
     });
   }, [selectedClass, selectedPeriod, selectedSemester, onFilterChange]);
 
-  // WALI_KELAS tidak menampilkan dropdown kelas
-  // GURU_MAPEL view-only, juga tidak menampilkan dropdown kelas
+  const triggerClass = "h-9 text-xs bg-background border-border hover:bg-muted/50 transition-colors";
+
   if (userIsWali || userIsMapel) {
     return (
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground shrink-0">
+          <Filter className="size-3.5" />
+          <span>Filter</span>
+        </div>
         <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-          <SelectTrigger className="w-full sm:w-[180px] bg-background">
+          <SelectTrigger className={`w-full sm:w-[150px] ${triggerClass}`}>
             <SelectValue placeholder="Pilih Periode" />
           </SelectTrigger>
           <SelectContent>
@@ -47,10 +52,9 @@ export function DashboardFilters({ role, onFilterChange }) {
             <SelectItem value="Semester">Semester</SelectItem>
           </SelectContent>
         </Select>
-
         {selectedPeriod === "Semester" && (
           <Select value={selectedSemester} onValueChange={setSelectedSemester}>
-            <SelectTrigger className="w-full sm:w-[180px] bg-background">
+            <SelectTrigger className={`w-full sm:w-[150px] ${triggerClass}`}>
               <SelectValue placeholder="Pilih Semester" />
             </SelectTrigger>
             <SelectContent>
@@ -65,9 +69,13 @@ export function DashboardFilters({ role, onFilterChange }) {
 
   // ADMIN view
   return (
-    <div className="flex flex-col sm:flex-row gap-4 mb-6">
+    <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground shrink-0">
+        <Filter className="size-3.5" />
+        <span>Filter</span>
+      </div>
       <Select value={selectedClass} onValueChange={setSelectedClass}>
-        <SelectTrigger className="w-full sm:w-[180px] bg-background">
+        <SelectTrigger className={`w-full sm:w-[150px] ${triggerClass}`}>
           <SelectValue placeholder="Pilih Kelas" />
         </SelectTrigger>
         <SelectContent>
@@ -79,9 +87,8 @@ export function DashboardFilters({ role, onFilterChange }) {
           ))}
         </SelectContent>
       </Select>
-
       <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-        <SelectTrigger className="w-full sm:w-[180px] bg-background">
+        <SelectTrigger className={`w-full sm:w-[150px] ${triggerClass}`}>
           <SelectValue placeholder="Pilih Periode" />
         </SelectTrigger>
         <SelectContent>
@@ -91,10 +98,9 @@ export function DashboardFilters({ role, onFilterChange }) {
           <SelectItem value="Semester">Semester</SelectItem>
         </SelectContent>
       </Select>
-
       {selectedPeriod === "Semester" && (
         <Select value={selectedSemester} onValueChange={setSelectedSemester}>
-          <SelectTrigger className="w-full sm:w-[180px] bg-background">
+          <SelectTrigger className={`w-full sm:w-[150px] ${triggerClass}`}>
             <SelectValue placeholder="Pilih Semester" />
           </SelectTrigger>
           <SelectContent>

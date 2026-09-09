@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { UserPlus, Loader2 } from "lucide-react";
+import { UserPlus, Loader2, FileSpreadsheet } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import {
 import StudentFilters from "@/components/students/StudentFilters";
 import StudentsTable from "@/components/students/StudentsTable";
 import StudentFormDialog from "@/components/students/StudentFormDialog";
+import StudentImportDialog from "@/components/students/StudentImportDialog";
 import {
   getSiswa,
   createSiswa,
@@ -33,6 +34,8 @@ function Students() {
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState("create");
   const [editTarget, setEditTarget] = useState(null);
+
+  const [importOpen, setImportOpen] = useState(false);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -86,6 +89,13 @@ function Students() {
       return matchesClass && matchesSearch;
     });
   }, [students, search, selectedClass]);
+
+  const isFilterActive = search !== "" || selectedClass !== "all";
+
+  const handleResetFilter = () => {
+    setSearch("");
+    setSelectedClass("all");
+  };
 
   const handleOpenAdd = () => {
     setFormMode("create");
@@ -146,7 +156,7 @@ function Students() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative space-y-6 pb-12 overflow-x-hidden">
       {toast && (
         <div
           className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm font-semibold transition-all duration-300 animate-in slide-in-from-bottom-4 ${
@@ -170,41 +180,52 @@ function Students() {
         title="Data Siswa"
         description="Kelola data siswa SMK Muhammadiyah 1 Playen."
         actions={
-          <Button
-            id="btn-tambah-siswa"
-            onClick={handleOpenAdd}
-            className="gap-2 font-semibold cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            <UserPlus className="size-4" />
-            Tambah Siswa
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              id="btn-import-excel"
+              variant="outline"
+              onClick={() => setImportOpen(true)}
+              className="gap-2 font-bold cursor-pointer border-border hover:bg-accent hover:text-accent-foreground shadow-xs"
+            >
+              <FileSpreadsheet className="size-4 text-emerald-600" />
+              <span>Import Excel</span>
+            </Button>
+            <Button
+              id="btn-tambah-siswa"
+              onClick={handleOpenAdd}
+              className="gap-2 font-bold cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
+            >
+              <UserPlus className="size-4" />
+              <span>Tambah Siswa</span>
+            </Button>
+          </div>
         }
       />
 
-      <div className="bg-card rounded-xl border border-border shadow-xs p-4 sm:p-6 space-y-4">
-        <StudentFilters
-          search={search}
-          onSearchChange={setSearch}
-          selectedClass={selectedClass}
-          onClassChange={setSelectedClass}
-          filteredCount={filteredStudents.length}
-          totalCount={students.length}
-          classes={classes}
-        />
+      <StudentFilters
+        search={search}
+        onSearchChange={setSearch}
+        selectedClass={selectedClass}
+        onClassChange={setSelectedClass}
+        filteredCount={filteredStudents.length}
+        totalCount={students.length}
+        classes={classes}
+        onResetFilter={handleResetFilter}
+        isFilterActive={isFilterActive}
+      />
 
-        {loading ? (
-          <div className="flex items-center justify-center py-16 gap-2 text-muted-foreground">
-            <Loader2 className="size-5 animate-spin" />
-            <span>Memuat data siswa...</span>
-          </div>
-        ) : (
-          <StudentsTable
-            students={filteredStudents}
-            onEdit={handleOpenEdit}
-            onDelete={handleOpenDelete}
-          />
-        )}
-      </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-20 gap-2 text-muted-foreground border rounded-xl bg-card shadow-xs">
+          <Loader2 className="size-5 animate-spin" />
+          <span className="text-sm font-medium">Memuat data siswa...</span>
+        </div>
+      ) : (
+        <StudentsTable
+          students={filteredStudents}
+          onEdit={handleOpenEdit}
+          onDelete={handleOpenDelete}
+        />
+      )}
 
       <StudentFormDialog
         open={formOpen}
@@ -215,25 +236,33 @@ function Students() {
         classes={classes}
       />
 
+      <StudentImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        classes={classes}
+        onSuccess={loadData}
+        showToast={showToast}
+      />
+
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="border-border text-left">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground font-bold">
               Hapus Data Siswa?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
+            <AlertDialogDescription className="text-muted-foreground text-xs">
               Anda akan menghapus data siswa{" "}
-              <span className="font-semibold text-foreground">{deleteTarget?.name}</span>
+              <span className="font-bold text-foreground">{deleteTarget?.name}</span>
               . Data siswa yang dihapus tidak dapat dikembalikan.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="font-semibold cursor-pointer">
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="font-semibold text-xs cursor-pointer">
               Batal
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-semibold cursor-pointer"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-semibold text-xs cursor-pointer"
             >
               Hapus
             </AlertDialogAction>

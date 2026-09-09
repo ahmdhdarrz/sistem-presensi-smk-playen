@@ -21,6 +21,11 @@ export async function deleteUser(id) {
   return res.data;
 }
 
+export async function importUsers(payload) {
+  const res = await api.post("/users/import", payload);
+  return res.data;
+}
+
 // ── Kelas (untuk dropdown kelas_id) ────────────────────────────────────────
 export async function getKelas() {
   const res = await api.get("/kelas");

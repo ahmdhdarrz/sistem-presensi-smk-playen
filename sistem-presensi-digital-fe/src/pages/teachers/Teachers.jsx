@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { UserPlus, Loader2 } from "lucide-react";
+import { UserPlus, Loader2, FileSpreadsheet } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import {
 import TeacherFilters from "@/pages/teachers/components/TeacherFilters";
 import TeachersTable from "@/pages/teachers/components/TeachersTable";
 import TeacherFormDialog from "@/pages/teachers/components/TeacherFormDialog";
+import TeacherImportDialog from "@/pages/teachers/components/TeacherImportDialog";
 import {
   getUsers,
   createUser,
@@ -40,6 +41,8 @@ function Teachers() {
   const [editTarget, setEditTarget] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const [importOpen, setImportOpen] = useState(false);
+
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -54,14 +57,13 @@ function Teachers() {
   // ─── Mapping data API → shape yang dipakai UI ─────────────────────────────
   const mapUser = (item, kelasList) => {
     const kelas = kelasList.find((k) => k.id === item.kelas_id);
-    // Normalise role dari backend (lowercase) ke uppercase agar cocok dengan ROLES constant
     const roleNorm = item.role ? String(item.role).toUpperCase() : "";
     const roleKey =
       roleNorm === "WALI_KELAS"
         ? ROLES.GURU_WALI_KELAS
         : roleNorm === "GURU_MAPEL"
         ? ROLES.GURU_MAPEL
-        : roleNorm; // ADMIN stays ADMIN
+        : roleNorm;
 
     return {
       id: item.id,
@@ -111,8 +113,14 @@ function Teachers() {
     });
   }, [teachers, search, selectedRole]);
 
-  // ─── Handlers CRUD ────────────────────────────────────────────────────────
+  const isFilterActive = search !== "" || selectedRole !== "all";
 
+  const handleResetFilter = () => {
+    setSearch("");
+    setSelectedRole("all");
+  };
+
+  // ─── Handlers CRUD ────────────────────────────────────────────────────────
   const handleOpenAdd = () => {
     setFormMode("create");
     setEditTarget(null);
@@ -169,13 +177,13 @@ function Teachers() {
   };
 
   return (
-    <div className="relative">
-      {/* ── Toast feedback ──────────────────────────────────────────────── */}
+    <div className="relative space-y-6 pb-12 overflow-x-hidden">
+      {/* Toast Feedback */}
       {toast && (
         <div
           className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm font-semibold transition-all duration-300 animate-in slide-in-from-bottom-4 ${
             toast.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+              ? "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/80 dark:border-emerald-800 dark:text-emerald-300"
               : "bg-destructive/10 border-destructive/30 text-destructive"
           }`}
           role="status"
@@ -190,50 +198,60 @@ function Teachers() {
         </div>
       )}
 
-      {/* ── Page Header ─────────────────────────────────────────────────── */}
+      {/* Page Header */}
       <PageHeader
         title="Data Guru"
-        description="Kelola data guru, peran, dan informasi kelas wali."
+        description="Kelola data guru, peran, dan informasi kelas wali SMK Muhammadiyah 1 Playen."
         actions={
-          <Button
-            id="btn-tambah-guru"
-            onClick={handleOpenAdd}
-            className="gap-2 font-semibold cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            <UserPlus className="size-4" />
-            Tambah Guru
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              id="btn-import-excel"
+              variant="outline"
+              onClick={() => setImportOpen(true)}
+              className="gap-2 font-bold cursor-pointer border-border hover:bg-accent hover:text-accent-foreground shadow-xs"
+            >
+              <FileSpreadsheet className="size-4 text-emerald-600" />
+              <span>Import Excel</span>
+            </Button>
+            <Button
+              id="btn-tambah-guru"
+              onClick={handleOpenAdd}
+              className="gap-2 font-bold cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
+            >
+              <UserPlus className="size-4" />
+              <span>Tambah Guru</span>
+            </Button>
+          </div>
         }
       />
 
-      {/* ── Card Konten Utama ────────────────────────────────────────────── */}
-      <div className="bg-card rounded-xl border border-border shadow-xs p-4 sm:p-6 space-y-4">
-        {/* Filter & Search */}
-        <TeacherFilters
-          search={search}
-          onSearchChange={setSearch}
-          selectedRole={selectedRole}
-          onRoleChange={setSelectedRole}
-          filteredCount={filteredTeachers.length}
-          totalCount={teachers.length}
+      {/* Filter Card */}
+      <TeacherFilters
+        search={search}
+        onSearchChange={setSearch}
+        selectedRole={selectedRole}
+        onRoleChange={setSelectedRole}
+        filteredCount={filteredTeachers.length}
+        totalCount={teachers.length}
+        onResetFilter={handleResetFilter}
+        isFilterActive={isFilterActive}
+      />
+
+      {/* Data Table / Loading State */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20 gap-2 text-muted-foreground border rounded-xl bg-card shadow-xs">
+          <Loader2 className="size-5 animate-spin" />
+          <span className="text-sm font-medium">Memuat data guru...</span>
+        </div>
+      ) : (
+        <TeachersTable
+          teachers={filteredTeachers}
+          onEdit={handleOpenEdit}
+          onDelete={handleOpenDelete}
         />
+      )}
 
-        {/* Tabel Guru / Loading State */}
-        {loading ? (
-          <div className="flex items-center justify-center py-16 gap-2 text-muted-foreground">
-            <Loader2 className="size-5 animate-spin" />
-            <span>Memuat data guru...</span>
-          </div>
-        ) : (
-          <TeachersTable
-            teachers={filteredTeachers}
-            onEdit={handleOpenEdit}
-            onDelete={handleOpenDelete}
-          />
-        )}
-      </div>
-
-      {/* ── Dialog Form Tambah / Edit ────────────────────────────────────── */}
+      {/* Form Dialog */}
       <TeacherFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}
@@ -244,28 +262,37 @@ function Teachers() {
         submitting={submitting}
       />
 
-      {/* ── Alert Dialog Konfirmasi Hapus ────────────────────────────────── */}
+      {/* Import Excel Dialog */}
+      <TeacherImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        classes={classes}
+        onSuccess={loadData}
+        showToast={showToast}
+      />
+
+      {/* Alert Dialog Konfirmasi Hapus */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="border-border text-left">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground font-bold">
               Hapus Data Guru?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
+            <AlertDialogDescription className="text-muted-foreground text-xs">
               Apakah Anda yakin ingin menghapus data guru{" "}
-              <span className="font-semibold text-foreground">
+              <span className="font-bold text-foreground">
                 {deleteTarget?.nama}
               </span>
-              ? Data guru yang dihapus akan terhapus dari daftar presensi/pengajar.
+              ? Data guru yang dihapus akan terhapus dari sistem presensi.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="font-semibold cursor-pointer">
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="font-semibold text-xs cursor-pointer">
               Batal
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-semibold cursor-pointer"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-semibold text-xs cursor-pointer"
             >
               Hapus
             </AlertDialogAction>

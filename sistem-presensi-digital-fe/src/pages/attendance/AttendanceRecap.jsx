@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import {
   Users, UserCheck, UserX, Clock, AlertTriangle, Download, Lock,
   Calendar, CalendarDays, CalendarRange, CalendarClock, LoaderCircle,
+  Search, RotateCcw, X, FileSpreadsheet
 } from "lucide-react";
 import { isWaliKelas, isAdmin } from "@/utils/roles";
 import { useNavigate } from "react-router-dom";
@@ -22,7 +23,8 @@ const PERIODS = [
   { id: "daily", label: "Harian", Icon: Calendar },
   { id: "weekly", label: "Mingguan", Icon: CalendarDays },
   { id: "monthly", label: "Bulanan", Icon: CalendarRange },
-  { id: "yearly", label: "Semesteran", Icon: CalendarClock },
+  { id: "semester1", label: "Semester 1", Icon: CalendarClock },
+  { id: "semester2", label: "Semester 2", Icon: CalendarClock },
 ];
 
 function todayStr() {
@@ -36,23 +38,74 @@ function capitalize(s) {
 
 function SummaryCards({ summary }) {
   const cards = [
-    { label: "Total Siswa", value: summary.total, icon: Users, colorClass: "border-border bg-card", iconClass: "text-primary", valueClass: "text-foreground" },
-    { label: "Hadir", value: summary.hadir, icon: UserCheck, colorClass: "border-emerald-200 bg-emerald-50/60", iconClass: "text-emerald-600", valueClass: "text-emerald-800" },
-    { label: "Terlambat", value: summary.terlambat, icon: Clock, colorClass: "border-amber-200 bg-amber-50/60", iconClass: "text-amber-600", valueClass: "text-amber-800" },
-    { label: "Sakit", value: summary.sakit, icon: AlertTriangle, colorClass: "border-orange-200 bg-orange-50/60", iconClass: "text-orange-600", valueClass: "text-orange-800" },
-    { label: "Izin", value: summary.izin, icon: Clock, colorClass: "border-yellow-200 bg-yellow-50/60", iconClass: "text-yellow-600", valueClass: "text-yellow-800" },
-    { label: "Alpa", value: summary.alpa, icon: UserX, colorClass: "border-rose-200 bg-rose-50/60", iconClass: "text-rose-600", valueClass: "text-rose-800" },
+    {
+      label: "Total Siswa",
+      value: summary.total,
+      icon: Users,
+      bgClass: "bg-slate-50 border-border dark:bg-slate-900/30",
+      accentBg: "bg-slate-500",
+      iconBg: "bg-slate-500 text-white",
+    },
+    {
+      label: "Hadir",
+      value: summary.hadir,
+      icon: UserCheck,
+      bgClass: "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800",
+      accentBg: "bg-emerald-500",
+      iconBg: "bg-emerald-500 text-white",
+    },
+    {
+      label: "Terlambat",
+      value: summary.terlambat,
+      icon: Clock,
+      bgClass: "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800",
+      accentBg: "bg-amber-500",
+      iconBg: "bg-amber-500 text-white",
+    },
+    {
+      label: "Izin",
+      value: summary.izin,
+      icon: Clock,
+      bgClass: "bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-800",
+      accentBg: "bg-yellow-500",
+      iconBg: "bg-yellow-500 text-white",
+    },
+    {
+      label: "Sakit",
+      value: summary.sakit,
+      icon: AlertTriangle,
+      bgClass: "bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800",
+      accentBg: "bg-orange-500",
+      iconBg: "bg-orange-500 text-white",
+    },
+    {
+      label: "Alpa",
+      value: summary.alpa,
+      icon: UserX,
+      bgClass: "bg-rose-50 border-rose-200 dark:bg-rose-950/20 dark:border-rose-800",
+      accentBg: "bg-rose-500",
+      iconBg: "bg-rose-500 text-white",
+    },
   ];
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-      {cards.map(({ label, value, icon: Icon, colorClass, iconClass, valueClass }) => (
-        <div key={label} className={cn("p-4 rounded-xl border shadow-xs text-left", colorClass)}>
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase text-muted-foreground">{label}</span>
-            <Icon className={cn("size-4", iconClass)} />
+      {cards.map(({ label, value, icon: Icon, bgClass, accentBg, iconBg }) => (
+        <div
+          key={label}
+          className={cn(
+            "relative overflow-hidden rounded-xl border p-3.5 flex flex-col gap-1.5 shadow-xs text-left transition-all duration-200",
+            bgClass
+          )}
+        >
+          <span className={cn("absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full", accentBg)} />
+          <div className="flex items-center justify-between pl-2">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{label}</span>
+            <div className={cn("flex items-center justify-center size-6 rounded shrink-0", iconBg)}>
+              <Icon className="size-3.5" />
+            </div>
           </div>
-          <p className={cn("text-2xl font-bold mt-2 tracking-tight", valueClass)}>{value}</p>
+          <p className="text-2xl font-extrabold text-foreground pl-2 tracking-tight">{value}</p>
         </div>
       ))}
     </div>
@@ -61,19 +114,19 @@ function SummaryCards({ summary }) {
 
 function StatusBadge({ status, isLate = false }) {
   const map = {
-    Hadir: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    Sakit: "bg-orange-100 text-orange-700 border-orange-200",
-    Izin: "bg-yellow-100 text-yellow-700 border-yellow-200",
-    Alpa: "bg-rose-100 text-rose-700 border-rose-200",
+    Hadir: "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800",
+    Sakit: "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-950/60 dark:text-orange-300 dark:border-orange-800",
+    Izin: "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-950/60 dark:text-yellow-300 dark:border-yellow-800",
+    Alpa: "bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800",
   };
-  if (!status) return <span className="text-xs text-muted-foreground italic">Belum diinput</span>;
+  if (!status) return <span className="text-xs text-muted-foreground/70 italic">Belum diinput</span>;
   return (
     <div className="inline-flex items-center justify-center gap-1.5 flex-wrap">
-      <Badge className={cn("text-xs font-bold border hover:bg-inherit", map[status] || "bg-muted text-muted-foreground")}>
+      <Badge className={cn("text-[11px] font-bold border shadow-2xs hover:bg-inherit px-2.5 py-0.5", map[status] || "bg-muted text-muted-foreground")}>
         {status}
       </Badge>
       {status === "Hadir" && isLate && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800 shadow-2xs">
           <Clock className="size-3 text-amber-600 dark:text-amber-400 shrink-0" />
           <span>Terlambat</span>
         </span>
@@ -85,18 +138,20 @@ function StatusBadge({ status, isLate = false }) {
 function PctBadge({ pct }) {
   const val = parseFloat(pct);
   const cls =
-    val >= 80 ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-    : val >= 60 ? "bg-amber-50 text-amber-700 border-amber-200"
-    : "bg-rose-50 text-rose-700 border-rose-200";
+    val >= 80
+      ? "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800"
+      : val >= 60
+      ? "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800"
+      : "bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800";
   return (
-    <span className={cn("inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border", cls)}>
+    <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-extrabold border shadow-2xs", cls)}>
       {pct}%
     </span>
   );
 }
 
 // Tabel Harian — status per sesi (Pagi & Sore terpisah)
-function DailyTable({ pagiRecords, soreRecords, students }) {
+function DailyTable({ pagiRecords, soreRecords, students, searchQuery }) {
   const pagiMap = useMemo(() => {
     const m = {};
     pagiRecords.forEach((r) => { m[r.siswa_id] = r; });
@@ -113,19 +168,24 @@ function DailyTable({ pagiRecords, soreRecords, students }) {
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow className="bg-slate-50/70">
-            <TableHead className="w-12 text-center font-bold text-foreground">No.</TableHead>
-            <TableHead className="w-28 font-bold text-foreground">NIS</TableHead>
-            <TableHead className="min-w-[180px] font-bold text-foreground">Nama Siswa</TableHead>
-            <TableHead className="text-center font-bold text-foreground">Sesi Pagi</TableHead>
-            <TableHead className="text-center font-bold text-foreground">Sesi Sore</TableHead>
+          <TableRow className="bg-slate-100/80 dark:bg-slate-800/80 border-b border-border">
+            <TableHead className="w-14 text-center font-bold text-foreground text-xs uppercase tracking-wider">No.</TableHead>
+            <TableHead className="w-32 font-bold text-foreground text-xs uppercase tracking-wider">NIS</TableHead>
+            <TableHead className="min-w-[200px] font-bold text-foreground text-xs uppercase tracking-wider">Nama Siswa</TableHead>
+            <TableHead className="text-center font-bold text-foreground text-xs uppercase tracking-wider min-w-[140px]">Sesi Pagi</TableHead>
+            <TableHead className="text-center font-bold text-foreground text-xs uppercase tracking-wider min-w-[140px]">Sesi Sore</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {students.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-10 text-muted-foreground font-medium">
-                Tidak ada data siswa untuk kelas ini.
+              <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <Users className="size-8 text-muted-foreground/40" />
+                  <p className="font-medium text-sm">
+                    {searchQuery ? `Tidak ada siswa yang cocok dengan "${searchQuery}"` : "Tidak ada data siswa untuk kelas ini."}
+                  </p>
+                </div>
               </TableCell>
             </TableRow>
           ) : (
@@ -133,17 +193,19 @@ function DailyTable({ pagiRecords, soreRecords, students }) {
               const pagi = pagiMap[s.id];
               const sore = soreMap[s.id];
               return (
-                <TableRow key={s.id} className="hover:bg-muted/20">
-                  <TableCell className="text-center text-muted-foreground font-medium py-3">{idx + 1}</TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground py-3">{s.nis}</TableCell>
-                  <TableCell className="font-semibold text-foreground py-3 text-left">{s.name}</TableCell>
+                <TableRow key={s.id} className="hover:bg-muted/30 transition-colors">
+                  <TableCell className="text-center text-muted-foreground font-semibold text-xs py-3">{idx + 1}</TableCell>
+                  <TableCell className="font-mono text-xs font-medium text-muted-foreground py-3">{s.nis}</TableCell>
+                  <TableCell className="font-bold text-foreground py-3 text-left">{s.name}</TableCell>
                   <TableCell className="text-center py-3">
                     <StatusBadge
                       status={capitalize(pagi?.status)}
                       isLate={Boolean(pagi?.terlambat)}
                     />
                   </TableCell>
-                  <TableCell className="text-center py-3"><StatusBadge status={capitalize(sore?.status)} /></TableCell>
+                  <TableCell className="text-center py-3">
+                    <StatusBadge status={capitalize(sore?.status)} />
+                  </TableCell>
                 </TableRow>
               );
             })
@@ -154,8 +216,8 @@ function DailyTable({ pagiRecords, soreRecords, students }) {
   );
 }
 
-// Tabel Akumulasi (Mingguan / Bulanan / Tahunan) — dari data rekap backend
-function AggregateTable({ rekapData, students }) {
+// Tabel Akumulasi (Mingguan / Bulanan / Semesteran) — dari data rekap backend
+function AggregateTable({ rekapData, students, searchQuery }) {
   const aggMap = useMemo(() => {
     const m = {};
     rekapData.forEach((d) => {
@@ -168,23 +230,28 @@ function AggregateTable({ rekapData, students }) {
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow className="bg-slate-50/70">
-            <TableHead className="w-12 text-center font-bold text-foreground">No.</TableHead>
-            <TableHead className="w-28 font-bold text-foreground">NIS</TableHead>
-            <TableHead className="min-w-[180px] font-bold text-foreground">Nama Siswa</TableHead>
-            <TableHead className="text-center font-bold text-emerald-700">Hadir</TableHead>
-            <TableHead className="text-center font-bold text-amber-700">Terlambat</TableHead>
-            <TableHead className="text-center font-bold text-orange-700">Sakit</TableHead>
-            <TableHead className="text-center font-bold text-yellow-700">Izin</TableHead>
-            <TableHead className="text-center font-bold text-rose-700">Alpa</TableHead>
-            <TableHead className="text-center font-bold text-foreground">% Kehadiran</TableHead>
+          <TableRow className="bg-slate-100/80 dark:bg-slate-800/80 border-b border-border">
+            <TableHead className="w-14 text-center font-bold text-foreground text-xs uppercase tracking-wider">No.</TableHead>
+            <TableHead className="w-32 font-bold text-foreground text-xs uppercase tracking-wider">NIS</TableHead>
+            <TableHead className="min-w-[200px] font-bold text-foreground text-xs uppercase tracking-wider">Nama Siswa</TableHead>
+            <TableHead className="text-center font-bold text-emerald-700 dark:text-emerald-400 text-xs uppercase tracking-wider">Hadir</TableHead>
+            <TableHead className="text-center font-bold text-amber-700 dark:text-amber-400 text-xs uppercase tracking-wider">Terlambat</TableHead>
+            <TableHead className="text-center font-bold text-orange-700 dark:text-orange-400 text-xs uppercase tracking-wider">Sakit</TableHead>
+            <TableHead className="text-center font-bold text-yellow-700 dark:text-yellow-400 text-xs uppercase tracking-wider">Izin</TableHead>
+            <TableHead className="text-center font-bold text-rose-700 dark:text-rose-400 text-xs uppercase tracking-wider">Alpa</TableHead>
+            <TableHead className="text-center font-bold text-foreground text-xs uppercase tracking-wider">% Kehadiran</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {students.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="text-center py-10 text-muted-foreground font-medium">
-                Tidak ada data siswa untuk kelas ini.
+              <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <Users className="size-8 text-muted-foreground/40" />
+                  <p className="font-medium text-sm">
+                    {searchQuery ? `Tidak ada siswa yang cocok dengan "${searchQuery}"` : "Tidak ada data siswa untuk kelas ini."}
+                  </p>
+                </div>
               </TableCell>
             </TableRow>
           ) : (
@@ -199,15 +266,15 @@ function AggregateTable({ rekapData, students }) {
               const pct = total > 0 ? ((hadir / total) * 100).toFixed(1) : "0.0";
 
               return (
-                <TableRow key={s.id} className="hover:bg-muted/20">
-                  <TableCell className="text-center text-muted-foreground font-medium py-3">{idx + 1}</TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground py-3">{s.nis}</TableCell>
-                  <TableCell className="font-semibold text-foreground py-3 text-left">{s.name}</TableCell>
-                  <TableCell className="text-center font-bold text-emerald-700 py-3">{hadir}</TableCell>
-                  <TableCell className="text-center font-bold text-amber-700 py-3">{terlambat}</TableCell>
-                  <TableCell className="text-center font-bold text-orange-700 py-3">{sakit}</TableCell>
-                  <TableCell className="text-center font-bold text-yellow-700 py-3">{izin}</TableCell>
-                  <TableCell className="text-center font-bold text-rose-700 py-3">{alpa}</TableCell>
+                <TableRow key={s.id} className="hover:bg-muted/30 transition-colors">
+                  <TableCell className="text-center text-muted-foreground font-semibold text-xs py-3">{idx + 1}</TableCell>
+                  <TableCell className="font-mono text-xs font-medium text-muted-foreground py-3">{s.nis}</TableCell>
+                  <TableCell className="font-bold text-foreground py-3 text-left">{s.name}</TableCell>
+                  <TableCell className="text-center font-bold text-emerald-700 dark:text-emerald-400 py-3">{hadir}</TableCell>
+                  <TableCell className="text-center font-bold text-amber-700 dark:text-amber-400 py-3">{terlambat}</TableCell>
+                  <TableCell className="text-center font-bold text-orange-700 dark:text-orange-400 py-3">{sakit}</TableCell>
+                  <TableCell className="text-center font-bold text-yellow-700 dark:text-yellow-400 py-3">{izin}</TableCell>
+                  <TableCell className="text-center font-bold text-rose-700 dark:text-rose-400 py-3">{alpa}</TableCell>
                   <TableCell className="text-center py-3"><PctBadge pct={pct} /></TableCell>
                 </TableRow>
               );
@@ -237,7 +304,8 @@ function AttendanceRecap() {
   const [weeklyRef, setWeeklyRef] = useState(todayStr);
   const [monthlyMonth, setMonthlyMonth] = useState(new Date().getMonth() + 1);
   const [monthlyYear, setMonthlyYear] = useState(new Date().getFullYear());
-  const [yearlyYear, setYearlyYear] = useState(new Date().getFullYear());
+  const [semesterYear, setSemesterYear] = useState(new Date().getFullYear());
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [loadingData, setLoadingData] = useState(false);
   const [dailyPagi, setDailyPagi] = useState([]);
@@ -305,11 +373,23 @@ function AttendanceRecap() {
           const data = await getRekapBulanan({ kelas_id: selectedClassId, bulan: monthlyMonth, tahun: monthlyYear });
           setRekapData(data.data || data);
           setPeriodLabel(`${MONTH_NAMES_ID[monthlyMonth - 1]} ${monthlyYear}`);
-        } else {
-          const { from, to } = getYearRange(yearlyYear);
+        } else if (activePeriod === "semester1") {
+          const from = `${semesterYear}-07-01`;
+          const to = `${semesterYear}-12-31`;
           const data = await getRekapPeriode({ kelas_id: selectedClassId, dari: from, sampai: to });
           setRekapData(data.data || data);
-          setPeriodLabel(`Tahun ${yearlyYear}`);
+          setPeriodLabel(`Semester 1 (Ganjil) ${semesterYear}`);
+        } else if (activePeriod === "semester2") {
+          const from = `${semesterYear}-01-01`;
+          const to = `${semesterYear}-06-30`;
+          const data = await getRekapPeriode({ kelas_id: selectedClassId, dari: from, sampai: to });
+          setRekapData(data.data || data);
+          setPeriodLabel(`Semester 2 (Genap) ${semesterYear}`);
+        } else {
+          const { from, to } = getYearRange(semesterYear);
+          const data = await getRekapPeriode({ kelas_id: selectedClassId, dari: from, sampai: to });
+          setRekapData(data.data || data);
+          setPeriodLabel(`Tahun ${semesterYear}`);
         }
       } catch (err) {
         console.error(err);
@@ -319,7 +399,40 @@ function AttendanceRecap() {
     };
 
     run();
-  }, [activePeriod, selectedClassId, dailyDate, weeklyRef, monthlyMonth, monthlyYear, yearlyYear]);
+  }, [activePeriod, selectedClassId, dailyDate, weeklyRef, monthlyMonth, monthlyYear, semesterYear]);
+
+  // Filter siswa berdasarkan search query
+  const filteredStudents = useMemo(() => {
+    if (!searchQuery.trim()) return students;
+    const q = searchQuery.toLowerCase().trim();
+    return students.filter(
+      (s) => s.name?.toLowerCase().includes(q) || s.nis?.toString().toLowerCase().includes(q)
+    );
+  }, [students, searchQuery]);
+
+  // Cek apakah filter aktif (bisa direset)
+  const isFilterActive = useMemo(() => {
+    const defaultClassId = userIsWali && user?.classId ? String(user.classId) : (classes[0]?.id ? String(classes[0].id) : "");
+    return (
+      activePeriod !== "daily" ||
+      dailyDate !== todayStr() ||
+      searchQuery !== "" ||
+      (!userIsWali && selectedClassId !== defaultClassId)
+    );
+  }, [activePeriod, dailyDate, searchQuery, selectedClassId, userIsWali, user?.classId, classes]);
+
+  const handleResetFilter = () => {
+    setActivePeriod("daily");
+    setDailyDate(todayStr());
+    setWeeklyRef(todayStr());
+    setMonthlyMonth(new Date().getMonth() + 1);
+    setMonthlyYear(new Date().getFullYear());
+    setSemesterYear(new Date().getFullYear());
+    setSearchQuery("");
+    if (!userIsWali && classes.length > 0) {
+      setSelectedClassId(String(classes[0].id));
+    }
+  };
 
   // Ringkasan kartu atas
   const summary = useMemo(() => {
@@ -357,13 +470,13 @@ function AttendanceRecap() {
     return (
       <div className="flex items-center justify-center py-24 gap-2 text-muted-foreground">
         <LoaderCircle className="size-5 animate-spin" />
-        <span>Memuat data kelas...</span>
+        <span className="text-sm font-medium">Memuat data kelas...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12 overflow-x-hidden">
       <PageHeader
         title="Rekap Absensi"
         description="Lihat ringkasan dan riwayat kehadiran siswa berdasarkan periode."
@@ -373,55 +486,67 @@ function AttendanceRecap() {
             className="bg-emerald-600 text-white hover:bg-emerald-700 font-bold gap-2 cursor-pointer shadow-xs"
           >
             <Download className="size-4" />
-            Export Excel
+            <span>Export Excel</span>
           </Button>
         }
       />
 
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide shrink-0">
-          Pilih Periode
-        </span>
-        <div className="inline-flex items-center gap-1 p-1 rounded-xl border border-border bg-muted/50 flex-wrap sm:flex-nowrap">
-          {PERIODS.map(({ id, label, Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setActivePeriod(id)}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 cursor-pointer",
-                activePeriod === id
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-card/70"
-              )}
-            >
-              <Icon className="size-4 shrink-0" />
-              <span>{label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* ─── Filter Card ─── */}
+      <Card className="shadow-xs border-border text-left overflow-hidden">
+        <CardHeader className="pb-3 border-b border-border/50 bg-slate-50/50 dark:bg-slate-900/30">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary shrink-0">
+                <Calendar className="size-4" />
+              </div>
+              <div>
+                <CardTitle className="text-base font-bold text-foreground">Filter & Periode Rekap</CardTitle>
+                <p className="text-xs text-muted-foreground font-medium">Sesuaikan periode, kelas, atau cari nama siswa</p>
+              </div>
+            </div>
 
-      <Card className="shadow-xs border-border text-left">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
-            <div className="space-y-1.5 min-w-[200px]">
-              <Label className="text-xs font-semibold text-foreground">Pilih Kelas</Label>
+            {/* Periode Tabs */}
+            <div className="inline-flex items-center gap-1 p-1 rounded-xl border border-border bg-muted/60 flex-wrap sm:flex-nowrap">
+              {PERIODS.map(({ id, label, Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setActivePeriod(id)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer",
+                    activePeriod === id
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground hover:bg-card/70"
+                  )}
+                >
+                  <Icon className="size-3.5 shrink-0" />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="pt-4 pb-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+            {/* 1. Pilih Kelas */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-foreground">Pilih Kelas</Label>
               {userIsWali ? (
-                <div className="flex items-center justify-between h-10 px-3.5 rounded-lg border border-border bg-slate-100/80">
-                  <div className="flex items-center gap-2">
-                    <Lock className="size-3.5 text-muted-foreground" />
-                    <span className="font-bold text-sm text-foreground">Kelas {currentClass.name}</span>
+                <div className="flex items-center justify-between h-9 px-3 rounded-lg border border-border bg-slate-100/80 dark:bg-slate-800/80">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <Lock className="size-3.5 text-muted-foreground shrink-0" />
+                    <span className="font-bold text-xs text-foreground truncate">Kelas {currentClass.name}</span>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary/10 text-primary">
-                    Guru Wali Kelas
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary/10 text-primary shrink-0">
+                    Wali Kelas
                   </span>
                 </div>
               ) : (
                 <select
                   value={selectedClassId}
                   onChange={(e) => setSelectedClassId(e.target.value)}
-                  className="w-full h-10 px-3.5 rounded-lg border border-border bg-card text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+                  className="w-full h-9 px-3 rounded-lg border border-border bg-card text-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
                 >
                   {classes.map((c) => (
                     <option key={c.id} value={c.id}>Kelas {c.nama_kelas}</option>
@@ -430,17 +555,18 @@ function AttendanceRecap() {
               )}
             </div>
 
+            {/* 2. Controls sesuai periode */}
             {activePeriod === "daily" && (
               <div className="space-y-1.5">
-                <Label htmlFor="recap-date" className="text-xs font-semibold text-foreground">Tanggal</Label>
+                <Label htmlFor="recap-date" className="text-xs font-bold text-foreground">Tanggal</Label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
                   <Input
                     id="recap-date"
                     type="date"
                     value={dailyDate}
                     onChange={(e) => setDailyDate(e.target.value)}
-                    className="pl-9 font-semibold text-sm w-auto"
+                    className="pl-9 h-9 text-xs font-bold w-full"
                   />
                 </div>
               </div>
@@ -448,31 +574,31 @@ function AttendanceRecap() {
 
             {activePeriod === "weekly" && (
               <div className="space-y-1.5">
-                <Label htmlFor="recap-week-ref" className="text-xs font-semibold text-foreground">
-                  Pilih Tanggal dalam Minggu
+                <Label htmlFor="recap-week-ref" className="text-xs font-bold text-foreground">
+                  Tanggal dalam Minggu
                 </Label>
                 <div className="relative">
-                  <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                  <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
                   <Input
                     id="recap-week-ref"
                     type="date"
                     value={weeklyRef}
                     onChange={(e) => setWeeklyRef(e.target.value)}
-                    className="pl-9 font-semibold text-sm w-auto"
+                    className="pl-9 h-9 text-xs font-bold w-full"
                   />
                 </div>
               </div>
             )}
 
             {activePeriod === "monthly" && (
-              <div className="flex gap-2 flex-wrap">
+              <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="recap-month" className="text-xs font-semibold text-foreground">Bulan</Label>
+                  <Label htmlFor="recap-month" className="text-xs font-bold text-foreground">Bulan</Label>
                   <select
                     id="recap-month"
                     value={monthlyMonth}
                     onChange={(e) => setMonthlyMonth(Number(e.target.value))}
-                    className="h-10 px-3.5 rounded-lg border border-border bg-card text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+                    className="w-full h-9 px-3 rounded-lg border border-border bg-card text-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
                   >
                     {MONTH_NAMES_ID.map((name, i) => (
                       <option key={i + 1} value={i + 1}>{name}</option>
@@ -480,12 +606,12 @@ function AttendanceRecap() {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="recap-month-year" className="text-xs font-semibold text-foreground">Tahun</Label>
+                  <Label htmlFor="recap-month-year" className="text-xs font-bold text-foreground">Tahun</Label>
                   <select
                     id="recap-month-year"
                     value={monthlyYear}
                     onChange={(e) => setMonthlyYear(Number(e.target.value))}
-                    className="h-10 px-3.5 rounded-lg border border-border bg-card text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+                    className="w-full h-9 px-3 rounded-lg border border-border bg-card text-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
                   >
                     {years.map((y) => <option key={y} value={y}>{y}</option>)}
                   </select>
@@ -493,44 +619,108 @@ function AttendanceRecap() {
               </div>
             )}
 
-            {activePeriod === "yearly" && (
+            {(activePeriod === "semester1" || activePeriod === "semester2" || activePeriod === "yearly") && (
               <div className="space-y-1.5">
-                <Label htmlFor="recap-year" className="text-xs font-semibold text-foreground">Tahun</Label>
+                <Label htmlFor="recap-semester-year" className="text-xs font-bold text-foreground">Tahun Ajaran</Label>
                 <select
-                  id="recap-year"
-                  value={yearlyYear}
-                  onChange={(e) => setYearlyYear(Number(e.target.value))}
-                  className="h-10 px-3.5 rounded-lg border border-border bg-card text-foreground text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+                  id="recap-semester-year"
+                  value={semesterYear}
+                  onChange={(e) => setSemesterYear(Number(e.target.value))}
+                  className="w-full h-9 px-3 rounded-lg border border-border bg-card text-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
                 >
                   {years.map((y) => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
             )}
+
+            {/* 3. Search Siswa */}
+            <div className="space-y-1.5">
+              <Label htmlFor="recap-search" className="text-xs font-bold text-foreground">Cari Siswa</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+                <Input
+                  id="recap-search"
+                  type="text"
+                  placeholder="Cari nama / NIS..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-8 h-9 text-xs font-semibold w-full"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 4. Reset Filter Button */}
+            <div className="flex items-center">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!isFilterActive}
+                onClick={handleResetFilter}
+                className={cn(
+                  "h-9 w-full text-xs font-bold gap-2 cursor-pointer transition-all border-dashed",
+                  isFilterActive
+                    ? "text-rose-600 border-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                    : "opacity-50 text-muted-foreground cursor-not-allowed"
+                )}
+              >
+                <RotateCcw className="size-3.5" />
+                <span>Reset Filter</span>
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* ─── Summary / Scorecard ─── */}
       <SummaryCards summary={summary} />
 
-      <Card className="shadow-xs border-border">
-        <CardHeader className="pb-3 border-b border-border/50 text-left">
+      {/* ─── Tabel Rekap ─── */}
+      <Card className="shadow-xs border-border overflow-hidden">
+        <CardHeader className="pb-3 border-b border-border/50 text-left bg-slate-50/50 dark:bg-slate-900/30">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <CardTitle className="text-base font-bold text-foreground">
-              Rekap Kehadiran — Kelas {currentClass.name}
-            </CardTitle>
-            <span className="text-sm text-muted-foreground font-medium">{periodLabel}</span>
+            <div>
+              <CardTitle className="text-base font-bold text-foreground">
+                Rekap Kehadiran — Kelas {currentClass.name}
+              </CardTitle>
+              {searchQuery && (
+                <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                  Menampilkan hasil pencarian untuk &ldquo;{searchQuery}&rdquo; ({filteredStudents.length} dari {students.length} siswa)
+                </p>
+              )}
+            </div>
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 self-start sm:self-auto">
+              {periodLabel}
+            </span>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           {loadingData || loadingStudents ? (
             <div className="flex items-center justify-center py-16 gap-2 text-muted-foreground">
               <LoaderCircle className="size-5 animate-spin" />
-              <span>Memuat data rekap...</span>
+              <span className="text-sm font-medium">Memuat data rekap...</span>
             </div>
           ) : activePeriod === "daily" ? (
-            <DailyTable pagiRecords={dailyPagi} soreRecords={dailySore} students={students} />
+            <DailyTable
+              pagiRecords={dailyPagi}
+              soreRecords={dailySore}
+              students={filteredStudents}
+              searchQuery={searchQuery}
+            />
           ) : (
-            <AggregateTable rekapData={rekapData} students={students} />
+            <AggregateTable
+              rekapData={rekapData}
+              students={filteredStudents}
+              searchQuery={searchQuery}
+            />
           )}
         </CardContent>
       </Card>

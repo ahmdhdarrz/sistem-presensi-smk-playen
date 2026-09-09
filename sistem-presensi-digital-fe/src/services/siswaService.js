@@ -21,6 +21,11 @@ export async function deleteSiswa(id) {
   return res.data;
 }
 
+export async function importSiswa(payload) {
+  const res = await api.post("/siswa/import", payload);
+  return res.data;
+}
+
 // ── Kelas ──────────────────────────────────────────────────────────────────
 export async function getKelas() {
   const res = await api.get("/kelas");

@@ -1,13 +1,9 @@
 import React from "react";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, RotateCcw, X, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 /**
  * classes: [{ id, nama_kelas }] — dari API GET /api/kelas
@@ -20,43 +16,84 @@ function StudentFilters({
   filteredCount,
   totalCount,
   classes = [],
+  onResetFilter,
+  isFilterActive,
 }) {
   return (
-    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-      <div className="relative flex-1 w-full sm:max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-        <Input
-          id="student-search"
-          type="search"
-          placeholder="Cari nama atau NIS..."
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9 bg-card"
-        />
-      </div>
+    <Card className="shadow-xs border-border text-left overflow-hidden">
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+            {/* Search Input */}
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+              <Input
+                id="student-search"
+                type="text"
+                placeholder="Cari nama atau NIS..."
+                value={search}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="pl-9 pr-8 h-9 text-xs font-semibold w-full bg-card"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => onSearchChange("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
 
-      <div className="w-full sm:w-44">
-        <Select value={selectedClass} onValueChange={onClassChange}>
-          <SelectTrigger id="student-class-filter" className="bg-card w-full">
-            <Filter className="size-4 text-muted-foreground mr-1 shrink-0" />
-            <SelectValue placeholder="Semua Kelas" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua Kelas</SelectItem>
-            {classes.map((cls) => (
-              <SelectItem key={cls.id} value={cls.nama_kelas}>
-                {cls.nama_kelas}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+            {/* Filter Kelas */}
+            <div className="w-full sm:w-48">
+              <div className="relative">
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+                <select
+                  id="student-class-filter"
+                  value={selectedClass}
+                  onChange={(e) => onClassChange(e.target.value)}
+                  className="w-full h-9 pl-9 pr-3 rounded-lg border border-border bg-card text-foreground text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer appearance-none"
+                >
+                  <option value="all">Semua Kelas</option>
+                  {classes.map((cls) => (
+                    <option key={cls.id} value={cls.nama_kelas}>
+                      Kelas {cls.nama_kelas}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-      <p className="text-sm text-muted-foreground whitespace-nowrap shrink-0 font-medium">
-        Menampilkan <span className="font-bold text-foreground">{filteredCount}</span>{" "}
-        dari <span className="font-bold text-foreground">{totalCount}</span> siswa
-      </p>
-    </div>
+            {/* Reset Filter Button */}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!isFilterActive}
+              onClick={onResetFilter}
+              className={cn(
+                "h-9 text-xs font-bold gap-2 cursor-pointer transition-all border-dashed shrink-0",
+                isFilterActive
+                  ? "text-rose-600 border-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                  : "opacity-50 text-muted-foreground cursor-not-allowed"
+              )}
+            >
+              <RotateCcw className="size-3.5" />
+              <span>Reset Filter</span>
+            </Button>
+          </div>
+
+          {/* Count Badge */}
+          <div className="flex items-center gap-2 self-end lg:self-auto text-xs text-muted-foreground font-medium shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-border/50 w-full lg:w-auto justify-between lg:justify-end">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-foreground font-bold border border-border">
+              <Users className="size-3.5 text-primary" />
+              <span>{filteredCount} / {totalCount} Siswa</span>
+            </span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

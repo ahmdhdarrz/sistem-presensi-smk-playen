@@ -1,5 +1,5 @@
 import React from "react";
-import { Pencil, Trash2, Users } from "lucide-react";
+import { Pencil, Trash2, Users, UserCheck, Shield, BookOpen } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -16,19 +16,19 @@ import { getRoleLabel, ROLES } from "@/utils/roles";
  * Tabel Data Guru — data bersumber dari API /api/users.
  *
  * Setiap item teacher memiliki field:
- *   id, nama, username, role, kelas_id, kelasNama (sudah di-map di parent)
+ *   id, nama, username, role, kelas_id, kelasNama
  */
 function TeachersTable({ teachers, onEdit, onDelete }) {
   if (teachers.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-        <div className="flex items-center justify-center size-14 rounded-full bg-muted">
-          <Users className="size-7 text-muted-foreground" />
+      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center border rounded-xl bg-card shadow-xs">
+        <div className="flex items-center justify-center size-14 rounded-full bg-slate-100 dark:bg-slate-800 text-muted-foreground border border-border">
+          <Users className="size-7" />
         </div>
         <div className="space-y-1">
-          <p className="font-semibold text-foreground">Data guru tidak ditemukan</p>
-          <p className="text-sm text-muted-foreground">
-            Coba ubah kata kunci pencarian atau filter yang digunakan.
+          <p className="font-bold text-foreground text-sm">Data guru tidak ditemukan</p>
+          <p className="text-xs text-muted-foreground max-w-sm">
+            Coba ubah kata kunci pencarian atau reset filter yang sedang aktif.
           </p>
         </div>
       </div>
@@ -38,99 +38,109 @@ function TeachersTable({ teachers, onEdit, onDelete }) {
   const getRoleBadgeStyle = (role) => {
     const upper = String(role).toUpperCase();
     if (upper === ROLES.ADMIN)
-      return "bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-100";
+      return "bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border-purple-300";
     if (upper === ROLES.GURU_WALI_KELAS || upper === "WALI_KELAS")
-      return "bg-primary/10 text-primary border-primary/20 hover:bg-primary/10";
+      return "bg-primary/10 text-primary border-primary/20";
     if (upper === ROLES.GURU_MAPEL || upper === "GURU_MAPEL")
-      return "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-100";
-    return "bg-muted text-muted-foreground";
+      return "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300";
+    return "bg-muted text-muted-foreground border-border";
   };
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50 hover:bg-muted/50">
-            <TableHead className="w-12 text-center font-bold text-foreground">No</TableHead>
-            <TableHead className="font-bold text-foreground min-w-[200px]">Nama Guru</TableHead>
-            <TableHead className="font-bold text-foreground min-w-[130px]">Username</TableHead>
-            <TableHead className="font-bold text-foreground min-w-[150px]">Role</TableHead>
-            <TableHead className="font-bold text-foreground min-w-[130px]">Kelas Wali</TableHead>
-            <TableHead className="font-bold text-foreground text-center min-w-[100px]">Aksi</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {teachers.map((teacher, index) => (
-            <TableRow
-              key={teacher.id}
-              className="hover:bg-muted/30 transition-colors"
-            >
-              {/* No */}
-              <TableCell className="text-center text-sm text-muted-foreground font-medium">
-                {index + 1}
-              </TableCell>
-
-              {/* Nama */}
-              <TableCell className="font-semibold text-foreground">
-                {teacher.nama}
-              </TableCell>
-
-              {/* Username */}
-              <TableCell className="text-sm text-foreground font-mono">
-                {teacher.username}
-              </TableCell>
-
-              {/* Role */}
-              <TableCell>
-                <Badge
-                  variant="outline"
-                  className={`${getRoleBadgeStyle(teacher.role)} font-semibold text-xs border`}
-                >
-                  {getRoleLabel(teacher.role)}
-                </Badge>
-              </TableCell>
-
-              {/* Kelas Wali */}
-              <TableCell>
-                {String(teacher.role).toUpperCase() === ROLES.GURU_WALI_KELAS &&
-                teacher.kelasNama ? (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                    {teacher.kelasNama}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground italic text-xs">—</span>
-                )}
-              </TableCell>
-
-              {/* Aksi */}
-              <TableCell>
-                <div className="flex items-center justify-center gap-1.5">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 text-primary hover:bg-primary/10 hover:text-primary cursor-pointer"
-                    onClick={() => onEdit(teacher)}
-                    aria-label={`Edit guru ${teacher.nama}`}
-                    title="Edit"
-                  >
-                    <Pencil className="size-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer"
-                    onClick={() => onDelete(teacher)}
-                    aria-label={`Hapus guru ${teacher.nama}`}
-                    title="Hapus"
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
-              </TableCell>
+    <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden text-left">
+      <div className="overflow-x-auto">
+        <Table className="w-full">
+          <TableHeader>
+            <TableRow className="bg-slate-50/80 dark:bg-slate-900/80 hover:bg-slate-50/80 dark:hover:bg-slate-900/80 border-b border-border">
+              <TableHead className="w-14 text-center font-extrabold text-foreground text-xs uppercase tracking-wider">No</TableHead>
+              <TableHead className="font-extrabold text-foreground text-xs uppercase tracking-wider min-w-[220px]">Nama Guru</TableHead>
+              <TableHead className="font-extrabold text-foreground text-xs uppercase tracking-wider min-w-[140px]">Username</TableHead>
+              <TableHead className="font-extrabold text-foreground text-xs uppercase tracking-wider min-w-[160px]">Role / Peran</TableHead>
+              <TableHead className="font-extrabold text-foreground text-xs uppercase tracking-wider min-w-[140px]">Kelas Wali</TableHead>
+              <TableHead className="font-extrabold text-foreground text-xs uppercase tracking-wider text-center min-w-[110px]">Aksi</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody className="divide-y divide-border">
+            {teachers.map((teacher, index) => {
+              const isWali = String(teacher.role).toUpperCase() === ROLES.GURU_WALI_KELAS;
+              return (
+                <TableRow
+                  key={teacher.id}
+                  className="hover:bg-slate-50/80 dark:hover:bg-slate-900/50 transition-colors"
+                >
+                  {/* No */}
+                  <TableCell className="text-center text-xs text-muted-foreground font-mono font-medium">
+                    {index + 1}
+                  </TableCell>
+
+                  {/* Nama Guru */}
+                  <TableCell className="font-bold text-foreground text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-center size-7 rounded-lg bg-primary/10 text-primary font-extrabold text-[11px]">
+                        {teacher.nama?.charAt(0) || "G"}
+                      </div>
+                      <span>{teacher.nama}</span>
+                    </div>
+                  </TableCell>
+
+                  {/* Username */}
+                  <TableCell className="text-xs text-muted-foreground font-mono font-semibold">
+                    @{teacher.username}
+                  </TableCell>
+
+                  {/* Role */}
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={`${getRoleBadgeStyle(teacher.role)} font-bold text-[11px] border px-2.5 py-0.5`}
+                    >
+                      {getRoleLabel(teacher.role)}
+                    </Badge>
+                  </TableCell>
+
+                  {/* Kelas Wali */}
+                  <TableCell>
+                    {isWali && teacher.kelasNama ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                        <BookOpen className="size-3 shrink-0" />
+                        <span>Kelas {teacher.kelasNama}</span>
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground italic text-xs font-medium">—</span>
+                    )}
+                  </TableCell>
+
+                  {/* Aksi */}
+                  <TableCell>
+                    <div className="flex items-center justify-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 cursor-pointer"
+                        onClick={() => onEdit(teacher)}
+                        aria-label={`Edit guru ${teacher.nama}`}
+                        title="Edit"
+                      >
+                        <Pencil className="size-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                        onClick={() => onDelete(teacher)}
+                        aria-label={`Hapus guru ${teacher.nama}`}
+                        title="Hapus"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

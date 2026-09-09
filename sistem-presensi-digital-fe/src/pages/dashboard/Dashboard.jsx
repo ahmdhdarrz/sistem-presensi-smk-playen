@@ -13,6 +13,7 @@ import { ClipboardCheck, Eye, ShieldCheck, School, Clock, Loader2 } from "lucide
 import { useAuth } from "@/context/AuthContext";
 import { isAdmin, isWaliKelas, isGuruMapel } from "@/utils/roles";
 import { getDashboard } from "@/services/dashboardService";
+import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 
 function pct(part, total) {
   if (!total) return "0%";
@@ -31,11 +32,12 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [raw, setRaw] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [filters, setFilters] = useState({ periode: "Hari Ini" });
 
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    getDashboard()
+    getDashboard(filters)
       .then((data) => {
         if (mounted) setRaw(data);
       })
@@ -49,7 +51,7 @@ function Dashboard() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [filters]);
 
   if (loading) {
     return (
@@ -169,6 +171,8 @@ function Dashboard() {
   return (
     <div className="space-y-6 pb-8">
       <PageHeader title={headerTitle} description={headerDescription} actions={headerActions} />
+
+      <DashboardFilters role={role} onFilterChange={setFilters} />
 
       {userIsWali && (
         <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-between text-left shadow-2xs">

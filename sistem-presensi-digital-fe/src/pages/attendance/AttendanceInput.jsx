@@ -624,63 +624,61 @@ function AttendanceInput() {
         <>
           {/* ─── Summary cards ─── */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
-            <div className="p-4 rounded-xl border border-border bg-card shadow-xs text-left">
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-xs font-semibold uppercase">Total Siswa</span>
-                <Users className="size-4 text-primary" />
+            <div className="relative overflow-hidden rounded-xl border border-border bg-primary/8 p-3 flex flex-col gap-2 shadow-sm text-left">
+              <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full bg-primary" />
+              <div className="flex items-center justify-between pl-2">
+                <span className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider">Total</span>
+                <div className="flex items-center justify-center size-6 rounded bg-primary text-primary-foreground shrink-0"><Users className="size-3" /></div>
               </div>
-              <p className="text-2xl font-bold text-foreground mt-2 tracking-tight">{summary.total}</p>
+              <p className="text-xl sm:text-2xl font-bold text-foreground pl-2 tracking-tight">{summary.total}</p>
             </div>
-            <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-900 text-left">
-              <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400">
-                <span className="text-xs font-semibold uppercase">Hadir</span>
-                <UserCheck className="size-4" />
+            <div className="relative overflow-hidden rounded-xl border border-border bg-emerald-50 p-3 flex flex-col gap-2 shadow-sm text-left">
+              <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full bg-emerald-500" />
+              <div className="flex items-center justify-between pl-2">
+                <span className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider">Hadir</span>
+                <div className="flex items-center justify-center size-6 rounded bg-emerald-500 text-white shrink-0"><UserCheck className="size-3" /></div>
               </div>
-              <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300 mt-2 tracking-tight">{summary.hadir}</p>
+              <p className="text-xl sm:text-2xl font-bold text-foreground pl-2 tracking-tight">{summary.hadir}</p>
             </div>
-            <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-900 text-left">
-              <div className="flex items-center justify-between text-amber-700 dark:text-amber-400">
-                <span className="text-xs font-semibold uppercase">Terlambat</span>
-                <Clock className="size-4" />
+            <div className="relative overflow-hidden rounded-xl border border-border bg-amber-50 p-3 flex flex-col gap-2 shadow-sm text-left">
+              <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full bg-amber-500" />
+              <div className="flex items-center justify-between pl-2">
+                <span className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider">Terlambat</span>
+                <div className="flex items-center justify-center size-6 rounded bg-amber-500 text-white shrink-0"><Clock className="size-3" /></div>
               </div>
-              <p className="text-2xl font-bold text-amber-800 dark:text-amber-300 mt-2 tracking-tight">{summary.terlambat}</p>
+              <p className="text-xl sm:text-2xl font-bold text-foreground pl-2 tracking-tight">{summary.terlambat}</p>
             </div>
-            <div className="p-4 rounded-xl border border-yellow-200 bg-yellow-50/50 dark:bg-yellow-950/20 dark:border-yellow-900 text-left">
-              <div className="flex items-center justify-between text-yellow-700 dark:text-yellow-400">
-                <span className="text-xs font-semibold uppercase">Izin</span>
-                <Clock className="size-4" />
+            <div className="relative overflow-hidden rounded-xl border border-border bg-yellow-50 p-3 flex flex-col gap-2 shadow-sm text-left">
+              <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full bg-yellow-500" />
+              <div className="flex items-center justify-between pl-2">
+                <span className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider">Izin</span>
+                <div className="flex items-center justify-center size-6 rounded bg-yellow-500 text-white shrink-0"><Clock className="size-3" /></div>
               </div>
-              <p className="text-2xl font-bold text-yellow-800 dark:text-yellow-300 mt-2 tracking-tight">{summary.izin}</p>
+              <p className="text-xl sm:text-2xl font-bold text-foreground pl-2 tracking-tight">{summary.izin}</p>
             </div>
-            <div className="p-4 rounded-xl border border-orange-200 bg-orange-50/50 dark:bg-orange-950/20 dark:border-orange-900 text-left">
-              <div className="flex items-center justify-between text-orange-700 dark:text-orange-400">
-                <span className="text-xs font-semibold uppercase">Sakit</span>
-                <AlertTriangle className="size-4" />
+            <div className="relative overflow-hidden rounded-xl border border-border bg-orange-50 p-3 flex flex-col gap-2 shadow-sm text-left">
+              <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full bg-orange-500" />
+              <div className="flex items-center justify-between pl-2">
+                <span className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider">Sakit</span>
+                <div className="flex items-center justify-center size-6 rounded bg-orange-500 text-white shrink-0"><AlertTriangle className="size-3" /></div>
               </div>
-              <p className="text-2xl font-bold text-orange-800 dark:text-orange-300 mt-2 tracking-tight">{summary.sakit}</p>
+              <p className="text-xl sm:text-2xl font-bold text-foreground pl-2 tracking-tight">{summary.sakit}</p>
             </div>
-            <div className="p-4 rounded-xl border border-rose-200 bg-rose-50/50 dark:bg-rose-950/20 dark:border-rose-900 text-left">
-              <div className="flex items-center justify-between text-rose-700 dark:text-rose-400">
-                <span className="text-xs font-semibold uppercase">Alpa</span>
-                <UserX className="size-4" />
+            <div className="relative overflow-hidden rounded-xl border border-border bg-rose-50 p-3 flex flex-col gap-2 shadow-sm text-left">
+              <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full bg-rose-500" />
+              <div className="flex items-center justify-between pl-2">
+                <span className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider">Alpa</span>
+                <div className="flex items-center justify-center size-6 rounded bg-rose-500 text-white shrink-0"><UserX className="size-3" /></div>
               </div>
-              <p className="text-2xl font-bold text-rose-800 dark:text-rose-300 mt-2 tracking-tight">{summary.alpa}</p>
+              <p className="text-xl sm:text-2xl font-bold text-foreground pl-2 tracking-tight">{summary.alpa}</p>
             </div>
-            <div
-              className={cn(
-                "p-4 rounded-xl border text-left transition-all",
-                !hasExistingData && summary.belumDiisi > 0
-                  ? "border-amber-400 bg-amber-100/50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200"
-                  : "border-border bg-card text-muted-foreground"
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase">Belum Diisi</span>
-                <Sparkles className="size-4 text-amber-600" />
+            <div className={cn("relative overflow-hidden rounded-xl border p-3 flex flex-col gap-2 shadow-sm text-left transition-all", !hasExistingData && summary.belumDiisi > 0 ? "border-amber-300 bg-amber-100" : "border-border bg-slate-50")}>
+              <span className={cn("absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full", !hasExistingData && summary.belumDiisi > 0 ? "bg-amber-500" : "bg-slate-400")} />
+              <div className="flex items-center justify-between pl-2">
+                <span className={cn("text-[10px] sm:text-xs font-bold uppercase tracking-wider", !hasExistingData && summary.belumDiisi > 0 ? "text-amber-700" : "text-muted-foreground")}>Belum Diisi</span>
+                <div className={cn("flex items-center justify-center size-6 rounded shrink-0", !hasExistingData && summary.belumDiisi > 0 ? "bg-amber-500 text-white" : "bg-slate-400 text-white")}><Sparkles className="size-3" /></div>
               </div>
-              <p className="text-2xl font-bold mt-2 tracking-tight">
-                {hasExistingData ? 0 : summary.belumDiisi}
-              </p>
+              <p className={cn("text-xl sm:text-2xl font-bold pl-2 tracking-tight", !hasExistingData && summary.belumDiisi > 0 ? "text-amber-900" : "text-foreground")}>{hasExistingData ? 0 : summary.belumDiisi}</p>
             </div>
           </div>
 
@@ -738,7 +736,7 @@ function AttendanceInput() {
                         <TableHead className="w-12 text-center font-bold text-foreground">No.</TableHead>
                         <TableHead className="w-28 font-bold text-foreground">NIS</TableHead>
                         <TableHead className="min-w-[180px] font-bold text-foreground">Nama Siswa</TableHead>
-                        <TableHead className="min-w-[280px] text-center font-bold text-foreground">Status Kehadiran</TableHead>
+                        <TableHead className="min-w-[220px] text-center font-bold text-foreground">Status Kehadiran</TableHead>
                         <TableHead className="min-w-[180px] font-bold text-foreground">Keterangan (Opsional)</TableHead>
                         {hasExistingData && (
                           <TableHead className="w-24 text-center font-bold text-foreground">Aksi</TableHead>
@@ -785,7 +783,7 @@ function AttendanceInput() {
                               {isEditingThis ? (
                                 /* ── EDIT MODE: status selector ── */
                                 <div className="flex flex-col items-center gap-1.5">
-                                  <div className="inline-flex items-center p-1 rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/10 gap-1">
+                                  <div className="inline-flex flex-wrap items-center justify-center p-1 rounded-lg border border-primary/20 bg-primary/5 gap-1">
                                     {STATUS_OPTIONS.map((label) => {
                                       const colorMap = {
                                         Hadir: "bg-emerald-600",
@@ -803,10 +801,10 @@ function AttendanceInput() {
                                             terlambat: label === "Hadir" && selectedSession.toLowerCase() === "pagi" ? prev.terlambat : false
                                           }))}
                                           className={cn(
-                                            "px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer",
+                                            "px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-[10px] sm:text-xs font-bold transition-all cursor-pointer",
                                             editDraft.status === label
-                                              ? `${colorMap[label]} ${label === "Izin" ? "text-yellow-950" : "text-white"} shadow-xs`
-                                              : "text-muted-foreground"
+                                              ? `${colorMap[label]} text-white shadow-xs`
+                                              : "text-muted-foreground hover:bg-black/5"
                                           )}
                                         >
                                           {label}
@@ -819,13 +817,13 @@ function AttendanceInput() {
                                       type="button"
                                       onClick={() => setEditDraft((prev) => ({ ...prev, terlambat: !prev.terlambat }))}
                                       className={cn(
-                                        "px-2.5 py-1 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border shadow-2xs mt-0.5",
+                                        "px-2.5 py-1 rounded-md text-[10px] sm:text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border shadow-2xs mt-0.5",
                                         editDraft.terlambat
                                           ? "bg-amber-500 text-white border-amber-600 shadow-xs"
-                                          : "bg-amber-50/80 text-amber-800 border-amber-300 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800"
+                                          : "bg-amber-50/80 text-amber-800 border-amber-300 hover:bg-amber-100"
                                       )}
                                     >
-                                      <Clock className="size-3.5 shrink-0" />
+                                      <Clock className="size-3 sm:size-3.5 shrink-0" />
                                       <span>{editDraft.terlambat ? "Terlambat" : "+ Tandai Terlambat"}</span>
                                     </button>
                                   )}
@@ -834,8 +832,8 @@ function AttendanceInput() {
                                 /* ── READ / CREATE MODE: status display/selector ── */
                                 <div className="flex flex-col items-center gap-1.5">
                                   <div className={cn(
-                                    "inline-flex items-center p-1 rounded-lg border border-border bg-slate-100/60 dark:bg-slate-800/60 gap-1",
-                                    hasExistingData && "opacity-70"
+                                    "inline-flex flex-wrap items-center justify-center p-1 rounded-lg border border-border bg-slate-50 gap-1",
+                                    hasExistingData && "opacity-80"
                                   )}>
                                     {STATUS_OPTIONS.map((label) => {
                                       const colorMap = {
@@ -851,11 +849,11 @@ function AttendanceInput() {
                                           disabled={hasExistingData}
                                           onClick={() => handleStatusChange(student.id, label)}
                                           className={cn(
-                                            "px-3 py-1.5 rounded-md text-xs font-bold transition-all",
+                                            "px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-[10px] sm:text-xs font-bold transition-all",
                                             displayRec.status === label
-                                              ? `${colorMap[label]} ${label === "Izin" ? "text-yellow-950" : "text-white"} shadow-xs`
+                                              ? `${colorMap[label]} text-white shadow-xs`
                                               : "text-muted-foreground",
-                                            hasExistingData ? "cursor-not-allowed" : "cursor-pointer"
+                                            hasExistingData ? "cursor-default" : "cursor-pointer hover:bg-black/5"
                                           )}
                                         >
                                           {label}
@@ -868,19 +866,19 @@ function AttendanceInput() {
                                       type="button"
                                       onClick={() => handleToggleTerlambat(student.id)}
                                       className={cn(
-                                        "px-2.5 py-1 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border shadow-2xs mt-0.5",
+                                        "px-2.5 py-1 rounded-md text-[10px] sm:text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border shadow-2xs mt-0.5",
                                         displayRec.terlambat
                                           ? "bg-amber-500 text-white border-amber-600 shadow-xs"
-                                          : "bg-amber-50/80 text-amber-800 border-amber-300 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800"
+                                          : "bg-amber-50/80 text-amber-800 border-amber-300 hover:bg-amber-100"
                                       )}
                                     >
-                                      <Clock className="size-3.5 shrink-0" />
+                                      <Clock className="size-3 sm:size-3.5 shrink-0" />
                                       <span>{displayRec.terlambat ? "Terlambat" : "+ Tandai Terlambat"}</span>
                                     </button>
                                   )}
                                   {hasExistingData && displayRec.status === "Hadir" && displayRec.terlambat && (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-                                      <Clock className="size-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                      <Clock className="size-3 text-amber-600 shrink-0" />
                                       <span>Terlambat</span>
                                     </span>
                                   )}

@@ -34,7 +34,7 @@ function App() {
           {/* Protected routes (Redirect to /login if NOT logged in) */}
           <Route element={<ProtectedRoute />}>
             <Route element={<DashboardLayout />}>
-              {/* Dashboard: Accessible by all 3 roles */}
+              {/* Dashboard: Accessible by all roles */}
               <Route path="/dashboard" element={<Dashboard />} />
               
               {/* Attendance Input: Accessible by ADMIN and GURU_WALI_KELAS */}
@@ -42,8 +42,8 @@ function App() {
                 <Route path="/attendance/input" element={<AttendanceInput />} />
               </Route>
 
-              {/* Attendance View: Accessible by all 3 roles (Main route for GURU_MAPEL) */}
-              <Route element={<RoleRoute allowedRoles={[ROLES.ADMIN, ROLES.GURU_WALI_KELAS, ROLES.GURU_MAPEL]} />}>
+              {/* Attendance View: Accessible by ADMIN, GURU_WALI_KELAS, GURU_MAPEL, and MONITORING */}
+              <Route element={<RoleRoute allowedRoles={[ROLES.ADMIN, ROLES.GURU_WALI_KELAS, ROLES.GURU_MAPEL, ROLES.MONITORING]} />}>
                 <Route path="/attendance/view" element={<AttendanceView />} />
               </Route>
 

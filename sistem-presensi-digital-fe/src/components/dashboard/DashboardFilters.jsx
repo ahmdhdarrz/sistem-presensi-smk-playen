@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getKelas } from "@/services/dashboardService";
-import { isAdmin, isWaliKelas, isGuruMapel } from "@/utils/roles";
+import { isAdmin, isWaliKelas, isGuruMapel, isMonitoring } from "@/utils/roles";
 import { Filter } from "lucide-react";
 
 export function DashboardFilters({ role, onFilterChange }) {
   const userIsAdmin = isAdmin(role);
   const userIsWali = isWaliKelas(role);
   const userIsMapel = isGuruMapel(role);
+  const userIsMon = isMonitoring(role);
 
   const [kelasList, setKelasList] = useState([]);
   const [selectedClass, setSelectedClass] = useState("all");
@@ -34,7 +35,7 @@ export function DashboardFilters({ role, onFilterChange }) {
 
   const triggerClass = "h-9 text-xs bg-background border-border hover:bg-muted/50 transition-colors";
 
-  if (userIsWali || userIsMapel) {
+  if (userIsWali || userIsMapel || userIsMon) {
     return (
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground shrink-0">

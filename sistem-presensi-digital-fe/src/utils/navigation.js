@@ -8,7 +8,7 @@ import {
   Download,
   UserCheck
 } from "lucide-react";
-import { ROLES } from "@/utils/roles";
+import { ROLES, isMonitoring } from "@/utils/roles";
 
 export const navigationConfig = {
   [ROLES.ADMIN]: [
@@ -82,6 +82,18 @@ export const navigationConfig = {
       icon: Eye,
     },
   ],
+  [ROLES.MONITORING]: [
+    {
+      label: "Dashboard",
+      path: "/dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      label: "Lihat Absensi",
+      path: "/attendance/view",
+      icon: Eye,
+    },
+  ],
 };
 
 export function getNavigationByRole(role) {
@@ -99,6 +111,10 @@ export function getNavigationByRole(role) {
 
   if (upperRole === ROLES.GURU_MAPEL || upperRole === "MAPEL") {
     return navigationConfig[ROLES.GURU_MAPEL];
+  }
+
+  if (isMonitoring(role) || upperRole.startsWith("MONITORING")) {
+    return navigationConfig[ROLES.MONITORING];
   }
 
   return navigationConfig[upperRole] || navigationConfig[ROLES.GURU_MAPEL];

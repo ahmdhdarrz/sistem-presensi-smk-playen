@@ -5,17 +5,52 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import {
-  Eye, Search, Calendar as CalendarIcon, School, UserCheck,
+  Search, Calendar as CalendarIcon, School, UserCheck,
   UserX, Clock, AlertTriangle, Filter, ShieldCheck, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAbsensi } from "@/services/attendanceService";
 import { getKelas } from "@/services/dashboardService";
+import { useAuth } from "@/context/AuthContext";
+import { isMonitoring, getMonitoringScope } from "@/utils/roles";
+
+const SUMMARY_COLOR_MAP = {
+  emerald: {
+    border: "border-emerald-200 dark:border-emerald-800/40",
+    bg: "bg-emerald-50/50 dark:bg-emerald-950/20",
+    text: "text-emerald-700 dark:text-emerald-400",
+    valueText: "text-emerald-800 dark:text-emerald-300",
+  },
+  yellow: {
+    border: "border-yellow-200 dark:border-yellow-800/40",
+    bg: "bg-yellow-50/50 dark:bg-yellow-950/20",
+    text: "text-yellow-700 dark:text-yellow-400",
+    valueText: "text-yellow-800 dark:text-yellow-300",
+  },
+  orange: {
+    border: "border-orange-200 dark:border-orange-800/40",
+    bg: "bg-orange-50/50 dark:bg-orange-950/20",
+    text: "text-orange-700 dark:text-orange-400",
+    valueText: "text-orange-800 dark:text-orange-300",
+  },
+  rose: {
+    border: "border-rose-200 dark:border-rose-800/40",
+    bg: "bg-rose-50/50 dark:bg-rose-950/20",
+    text: "text-rose-700 dark:text-rose-400",
+    valueText: "text-rose-800 dark:text-rose-300",
+  },
+};
 
 function AttendanceView() {
+  const { user } = useAuth();
+  const role = user?.role;
+  const userIsMon = isMonitoring(role);
+  const monScope = getMonitoringScope(role);
+
   const [kelasList, setKelasList] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [selectedSesi, setSelectedSesi] = useState("pagi");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [absensiData, setAbsensiData] = useState([]);
@@ -26,18 +61,19 @@ function AttendanceView() {
   useEffect(() => {
     getKelas()
       .then((data) => {
-        setKelasList(data);
-        if (data.length > 0) setSelectedClassId(String(data[0].id));
+        const list = Array.isArray(data) ? data : (data?.data || []);
+        setKelasList(list);
+        if (list.length > 0) setSelectedClassId(String(list[0].id));
       })
       .catch(console.error)
       .finally(() => setLoadingKelas(false));
   }, []);
 
-  // Fetch absensi saat kelas atau tanggal berubah
+  // Fetch absensi saat kelas, tanggal, atau sesi berubah
   useEffect(() => {
     if (!selectedClassId || !selectedDate) return;
     setLoading(true);
-    getAbsensi({ kelas_id: selectedClassId, tanggal: selectedDate, sesi: "pagi" })
+    getAbsensi({ kelas_id: selectedClassId, tanggal: selectedDate, sesi: selectedSesi })
       .then((data) => {
         const normalized = (Array.isArray(data) ? data : data.data || []).map((item) => ({
           id: item.id,
@@ -52,7 +88,7 @@ function AttendanceView() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [selectedClassId, selectedDate]);
+  }, [selectedClassId, selectedDate, selectedSesi]);
 
   const currentClass = useMemo(() => {
     return kelasList.find((c) => String(c.id) === String(selectedClassId));
@@ -88,11 +124,19 @@ function AttendanceView() {
     } catch { return selectedDate; }
   }, [selectedDate]);
 
+  const headerTitle = userIsMon && monScope
+    ? `Lihat Presensi — Kelas ${monScope}`
+    : "Lihat Data Presensi";
+
+  const headerDescription = userIsMon
+    ? `Akses informasi presensi siswa tingkat ${monScope || "sekolah"} (View Only).`
+    : "Akses informasi kehadiran siswa (View Only).";
+
   return (
     <div className="space-y-6 pb-12">
       <PageHeader
-        title="Lihat Data Presensi"
-        description="Akses informasi kehadiran siswa (View Only)."
+        title={headerTitle}
+        description={headerDescription}
         actions={
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold shadow-2xs">
             <ShieldCheck className="size-4 text-emerald-600" />
@@ -110,7 +154,8 @@ function AttendanceView() {
         </CardHeader>
         <CardContent className="pt-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
-            <div className="lg:col-span-4 space-y-1.5 text-left">
+            {/* Dropdown Kelas */}
+            <div className="lg:col-span-3 space-y-1.5 text-left">
               <Label className="text-xs font-semibold text-foreground">Pilih Kelas</Label>
               <div className="relative">
                 <School className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
@@ -125,7 +170,7 @@ function AttendanceView() {
                   ) : (
                     kelasList.map((c) => (
                       <option key={c.id} value={c.id}>
-                        Kelas {c.nama_kelas} (Tingkat {c.tingkat})
+                        Kelas {c.nama_kelas} {c.tingkat ? `(Tingkat ${c.tingkat})` : ""}
                       </option>
                     ))
                   )}
@@ -133,7 +178,24 @@ function AttendanceView() {
               </div>
             </div>
 
-            <div className="lg:col-span-4 space-y-1.5 text-left">
+            {/* Filter Sesi: Pagi / Sore */}
+            <div className="lg:col-span-3 space-y-1.5 text-left">
+              <Label className="text-xs font-semibold text-foreground">Filter Sesi</Label>
+              <div className="relative">
+                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                <select
+                  value={selectedSesi}
+                  onChange={(e) => setSelectedSesi(e.target.value)}
+                  className="w-full h-10 pl-9 pr-4 rounded-lg border border-border bg-card text-foreground text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+                >
+                  <option value="pagi">Sesi Pagi</option>
+                  <option value="sore">Sesi Sore</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Tanggal Presensi */}
+            <div className="lg:col-span-3 space-y-1.5 text-left">
               <Label className="text-xs font-semibold text-foreground">Tanggal Presensi</Label>
               <div className="relative">
                 <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
@@ -146,7 +208,8 @@ function AttendanceView() {
               </div>
             </div>
 
-            <div className="lg:col-span-4 space-y-1.5 text-left">
+            {/* Cari Siswa / NIS */}
+            <div className="lg:col-span-3 space-y-1.5 text-left">
               <Label className="text-xs font-semibold text-foreground">Cari Siswa / NIS</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
@@ -190,27 +253,30 @@ function AttendanceView() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "HADIR", value: summary.hadir, icon: UserCheck, color: "emerald" },
-          { label: "IZIN", value: summary.izin, icon: Clock, color: "yellow" },
-          { label: "SAKIT", value: summary.sakit, icon: AlertTriangle, color: "orange" },
-          { label: "ALPA", value: summary.alpa, icon: UserX, color: "rose" },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className={`p-3.5 rounded-xl border border-${color}-200 bg-${color}-50/50 dark:bg-${color}-950/20 text-left`}>
-            <div className={`flex items-center justify-between text-${color}-700 dark:text-${color}-400`}>
-              <span className="text-xs font-semibold">{label}</span>
-              <Icon className="size-4" />
+          { label: "HADIR", value: summary.hadir, icon: UserCheck, colorKey: "emerald" },
+          { label: "IZIN", value: summary.izin, icon: Clock, colorKey: "yellow" },
+          { label: "SAKIT", value: summary.sakit, icon: AlertTriangle, colorKey: "orange" },
+          { label: "ALPA", value: summary.alpa, icon: UserX, colorKey: "rose" },
+        ].map(({ label, value, icon: Icon, colorKey }) => {
+          const color = SUMMARY_COLOR_MAP[colorKey];
+          return (
+            <div key={label} className={`p-3.5 rounded-xl border ${color.border} ${color.bg} text-left`}>
+              <div className={`flex items-center justify-between ${color.text}`}>
+                <span className="text-xs font-semibold">{label}</span>
+                <Icon className="size-4" />
+              </div>
+              <p className={`text-xl font-bold ${color.valueText} mt-1`}>
+                {value} <span className="text-xs font-normal text-muted-foreground">Siswa</span>
+              </p>
             </div>
-            <p className={`text-xl font-bold text-${color}-800 dark:text-${color}-300 mt-1`}>
-              {value} <span className="text-xs font-normal text-muted-foreground">Siswa</span>
-            </p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <Card className="shadow-xs border-border">
         <CardHeader className="pb-3 border-b border-border/50 text-left">
           <CardTitle className="text-base font-bold text-foreground">
-            Presensi Kelas {currentClass?.nama_kelas || "-"} — {formattedIndonesianDate}
+            Presensi Kelas {currentClass?.nama_kelas || "-"} ({selectedSesi === "pagi" ? "Sesi Pagi" : "Sesi Sore"}) — {formattedIndonesianDate}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -241,10 +307,10 @@ function AttendanceView() {
                         <TableCell className="text-center py-3">
                           <span className={cn(
                             "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold",
-                            s.status === "Hadir" && "bg-emerald-100 text-emerald-800",
-                            s.status === "Izin" && "bg-yellow-100 text-yellow-800",
-                            s.status === "Sakit" && "bg-orange-100 text-orange-800",
-                            s.status === "Alpa" && "bg-rose-100 text-rose-800",
+                            s.status === "Hadir" && "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
+                            s.status === "Izin" && "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300",
+                            s.status === "Sakit" && "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300",
+                            s.status === "Alpa" && "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300",
                           )}>
                             {s.status}
                           </span>
@@ -256,7 +322,7 @@ function AttendanceView() {
                     <TableRow>
                       <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
                         {absensiData.length === 0
-                          ? "Belum ada data presensi untuk kelas dan tanggal ini."
+                          ? "Belum ada data presensi untuk kelas, tanggal, dan sesi ini."
                           : "Tidak ada data yang sesuai filter."}
                       </TableCell>
                     </TableRow>

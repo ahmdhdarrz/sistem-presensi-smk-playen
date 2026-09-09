@@ -1,6 +1,7 @@
 import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { isMonitoring } from "@/utils/roles";
 
 /**
  * ProtectedRoute: Memastikan hanya user yang sudah login yang dapat mengakses Halaman Terproteksi.
@@ -31,7 +32,7 @@ export function GuestRoute() {
 }
 
 /**
- * RoleRoute: Memastikan user memiliki role yang diizinkan (misal: ADMIN, GURU_WALI_KELAS).
+ * RoleRoute: Memastikan user memiliki role yang diizinkan (misal: ADMIN, GURU_WALI_KELAS, MONITORING).
  * Jika role tidak diizinkan, otomatis redirect ke /unauthorized.
  */
 export function RoleRoute({ allowedRoles = [] }) {
@@ -44,10 +45,12 @@ export function RoleRoute({ allowedRoles = [] }) {
   const userRole = (user?.role || "").toUpperCase();
   const normalizedAllowed = allowedRoles.map((r) => String(r).toUpperCase());
 
-  // Support legacy role values mapped to standard roles
+  // Support legacy role values & monitoring role variants
   let isAllowed = normalizedAllowed.includes(userRole);
   if (!isAllowed) {
     if (userRole === "GURU" && (normalizedAllowed.includes("GURU_WALI_KELAS") || normalizedAllowed.includes("GURU"))) {
+      isAllowed = true;
+    } else if (isMonitoring(userRole) && normalizedAllowed.some((r) => r.startsWith("MONITORING"))) {
       isAllowed = true;
     }
   }

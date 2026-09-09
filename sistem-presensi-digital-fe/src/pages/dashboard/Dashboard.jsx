@@ -12,7 +12,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { ClipboardCheck, Eye, ShieldCheck, School, Clock, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { isAdmin, isWaliKelas, isGuruMapel } from "@/utils/roles";
+import { isAdmin, isWaliKelas, isGuruMapel, isMonitoring, getMonitoringScope } from "@/utils/roles";
 import { getDashboard } from "@/services/dashboardService";
 import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 
@@ -29,6 +29,8 @@ function Dashboard() {
   const userIsAdmin = isAdmin(role);
   const userIsWali = isWaliKelas(role);
   const userIsMapel = isGuruMapel(role);
+  const userIsMon = isMonitoring(role);
+  const monScope = getMonitoringScope(role);
 
   const [loading, setLoading] = useState(true);
   const [raw, setRaw] = useState(null);
@@ -76,27 +78,40 @@ function Dashboard() {
   // ─── Bangun bentuk data sesuai role ────────────────────────────────────────
   let dashboardData = {};
 
-  if (userIsAdmin || userIsMapel) {
-    const s = raw.stats;
+  if (userIsAdmin || userIsMapel || userIsMon) {
+    const s = raw.stats || {};
     const tidakHadir = (s.izin || 0) + (s.sakit || 0) + (s.alpa || 0);
 
+    let statsList = [];
+    if (userIsMon) {
+      const scopeLabel = monScope ? ` (Kelas ${monScope})` : "";
+      statsList = [
+        { title: `Total Siswa${scopeLabel}`, value: String(s.total_siswa || 0), description: s.total_kelas ? `Terdaftar di ${s.total_kelas} kelas` : "Siswa terdaftar", icon: "Users" },
+        { title: "Hadir Hari Ini", value: String(s.hadir_hari_ini || 0), description: `${pct(s.hadir_hari_ini || 0, s.total_siswa || 0)} total kehadiran siswa`, icon: "UserCheck" },
+        { title: "Siswa Tidak Hadir", value: String(tidakHadir), description: `Izin: ${s.izin || 0} | Sakit: ${s.sakit || 0} | Alpa: ${s.alpa || 0}`, icon: "UserX" },
+        { title: "Status Presensi Kelas", value: `${s.kelas_sudah_input || 0} / ${s.total_kelas || 0} Kelas`, description: "Kelas telah menginput presensi harian", icon: "School" },
+      ];
+    } else if (userIsMapel) {
+      statsList = [
+        { title: "Total Siswa Terdaftar", value: String(s.total_siswa || 0), description: "Seluruh kelas di SMK M 1 Playen", icon: "Users" },
+        { title: "Kehadiran Hari Ini", value: String(s.hadir_hari_ini || 0), description: `${pct(s.hadir_hari_ini || 0, s.total_siswa || 0)} total kehadiran siswa`, icon: "UserCheck" },
+        { title: "Siswa Tidak Hadir", value: String(tidakHadir), description: `Izin: ${s.izin || 0} | Sakit: ${s.sakit || 0} | Alpa: ${s.alpa || 0}`, icon: "UserX" },
+        { title: "Siswa Terlambat", value: String(s.terlambat || 0), description: "Hadir namun terlambat (Sesi Pagi)", icon: "Clock" },
+        { title: "Status Akses", value: "View Only", description: "Akses informasi & rekapitulasi", icon: "Eye" },
+      ];
+    } else {
+      statsList = [
+        { title: "Total Siswa Sekolah", value: String(s.total_siswa || 0), description: `Terdaftar di ${s.total_kelas || 0} kelas`, icon: "Users" },
+        { title: "Hadir Hari Ini", value: String(s.hadir_hari_ini || 0), description: `${pct(s.hadir_hari_ini || 0, s.total_siswa || 0)} tingkat kehadiran sekolah`, icon: "UserCheck" },
+        { title: "Siswa Tidak Hadir", value: String(tidakHadir), description: `Izin: ${s.izin || 0} | Sakit: ${s.sakit || 0} | Alpa: ${s.alpa || 0}`, icon: "UserX" },
+        { title: "Siswa Terlambat", value: String(s.terlambat || 0), description: "Hadir namun terlambat (Sesi Pagi)", icon: "Clock" },
+        { title: "Status Presensi Kelas", value: `${s.kelas_sudah_input || 0} / ${s.total_kelas || 0} Kelas`, description: "Kelas telah menginput presensi harian", icon: "School" },
+      ];
+    }
+
     dashboardData = {
-      stats: userIsMapel
-        ? [
-            { title: "Total Siswa Terdaftar", value: String(s.total_siswa), description: "Seluruh kelas di SMK M 1 Playen", icon: "Users" },
-            { title: "Kehadiran Hari Ini", value: String(s.hadir_hari_ini), description: `${pct(s.hadir_hari_ini, s.total_siswa)} total kehadiran siswa`, icon: "UserCheck" },
-            { title: "Siswa Tidak Hadir", value: String(tidakHadir), description: `Izin: ${s.izin} | Sakit: ${s.sakit} | Alpa: ${s.alpa}`, icon: "UserX" },
-            { title: "Siswa Terlambat", value: String(s.terlambat || 0), description: "Hadir namun terlambat (Sesi Pagi)", icon: "Clock" },
-            { title: "Status Akses", value: "View Only", description: "Akses informasi & rekapitulasi", icon: "Eye" },
-          ]
-        : [
-            { title: "Total Siswa Sekolah", value: String(s.total_siswa), description: `Terdaftar di ${s.total_kelas} kelas`, icon: "Users" },
-            { title: "Hadir Hari Ini", value: String(s.hadir_hari_ini), description: `${pct(s.hadir_hari_ini, s.total_siswa)} tingkat kehadiran sekolah`, icon: "UserCheck" },
-            { title: "Siswa Tidak Hadir", value: String(tidakHadir), description: `Izin: ${s.izin} | Sakit: ${s.sakit} | Alpa: ${s.alpa}`, icon: "UserX" },
-            { title: "Siswa Terlambat", value: String(s.terlambat || 0), description: "Hadir namun terlambat (Sesi Pagi)", icon: "Clock" },
-            { title: "Status Presensi Kelas", value: `${s.kelas_sudah_input} / ${s.total_kelas} Kelas`, description: "Kelas telah menginput presensi harian", icon: "School" },
-          ],
-      sessionStatus: raw.session_status,
+      stats: statsList,
+      sessionStatus: raw.session_status || [],
       comparisonData: (raw.comparison_data || []).map((item) => ({ ...item, Terlambat: item.Terlambat || 0 })),
       trendData: (raw.trend_data || []).map((item) => ({ ...item, Terlambat: item.Terlambat || 0 })),
       frequentAbsences: raw.frequent_absences || [],
@@ -104,13 +119,13 @@ function Dashboard() {
       recentLogs: raw.recent_logs || [],
     };
   } else if (userIsWali) {
-    const s = raw.stats;
+    const s = raw.stats || {};
     dashboardData = {
       className: classNameInfo,
       stats: [
-        { title: "Total Siswa Kelas", value: String(s.total_siswa), description: `Terdaftar di kelas ${classNameInfo}`, icon: "Users" },
-        { title: "Hadir Hari Ini", value: String(s.hadir_hari_ini), description: `${pct(s.hadir_hari_ini, s.total_siswa)} tingkat kehadiran hari ini`, icon: "UserCheck" },
-        { title: "Siswa Tidak Hadir", value: String(s.izin + s.sakit + s.alpa), description: `Sakit: ${s.sakit} | Izin: ${s.izin} | Alpa: ${s.alpa}`, icon: "UserX" },
+        { title: "Total Siswa Kelas", value: String(s.total_siswa || 0), description: `Terdaftar di kelas ${classNameInfo}`, icon: "Users" },
+        { title: "Hadir Hari Ini", value: String(s.hadir_hari_ini || 0), description: `${pct(s.hadir_hari_ini || 0, s.total_siswa || 0)} tingkat kehadiran hari ini`, icon: "UserCheck" },
+        { title: "Siswa Tidak Hadir", value: String((s.izin || 0) + (s.sakit || 0) + (s.alpa || 0)), description: `Sakit: ${s.sakit || 0} | Izin: ${s.izin || 0} | Alpa: ${s.alpa || 0}`, icon: "UserX" },
         { title: "Siswa Terlambat", value: String(s.terlambat || 0), description: "Hadir namun terlambat (Sesi Pagi)", icon: "Clock" },
         {
           title: "Status Presensi Hari Ini",
@@ -121,7 +136,7 @@ function Dashboard() {
           icon: "ClipboardCheck",
         },
       ],
-      sessionStatus: raw.session_status,
+      sessionStatus: raw.session_status || [],
       comparisonData: (raw.comparison_data || []).map((item) => ({ ...item, Terlambat: item.Terlambat || 0 })),
       trendData: (raw.trend_data || []).map((item) => ({ ...item, Terlambat: item.Terlambat || 0 })),
       frequentAbsences: raw.frequent_absences || [],
@@ -142,6 +157,9 @@ function Dashboard() {
   } else if (userIsMapel) {
     headerTitle = "Dashboard Guru Mata Pelajaran";
     headerDescription = "Pemantauan informasi presensi siswa secara terpadu (View Only).";
+  } else if (userIsMon) {
+    headerTitle = monScope ? `Dashboard Monitoring — Kelas ${monScope}` : "Dashboard Monitoring";
+    headerDescription = `Monitoring presensi seluruh kelas tingkat ${monScope || "sekolah"} hari ini.`;
   }
 
   // Header CTA Actions
@@ -206,10 +224,15 @@ function Dashboard() {
 
       {/* ── Content Area ── */}
       {userIsMapel ? (
-        /* Guru Mapel: Aktivitas log + trend side by side */
+        /* Guru Mapel: Aktivitas log, trend, & tabel sering terlambat / alpa */
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          <div className="lg:col-span-5">
-            <Card className="h-full border-border text-left">
+          {/* ── LEFT COLUMN ── */}
+          <div className="lg:col-span-7 flex flex-col gap-4 min-w-0">
+            {/* 1. Tren Kehadiran */}
+            <AttendanceTrendChart isTeacher={false} data={dashboardData.trendData} />
+
+            {/* 2. Aktivitas Input Presensi Terbaru */}
+            <Card className="border-border text-left">
               <CardHeader className="pb-2 pt-4 px-4 border-b border-border/50">
                 <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
                   <Clock className="size-4 text-primary" />
@@ -248,13 +271,23 @@ function Dashboard() {
               </CardContent>
             </Card>
           </div>
-          <div className="lg:col-span-7">
-            <AttendanceTrendChart isTeacher={false} data={dashboardData.trendData} />
+
+          {/* ── RIGHT COLUMN ── */}
+          <div className="lg:col-span-5 flex flex-col gap-4 min-w-0 lg:self-stretch">
+            {/* 1. Sering Terlambat */}
+            <div className="flex-1 flex flex-col min-h-0">
+              <FrequentLateTable isTeacher={false} data={dashboardData.frequentLates} />
+            </div>
+
+            {/* 2. Sering Alpa */}
+            <div className="flex-1 flex flex-col min-h-0">
+              <FrequentAbsenceTable isTeacher={false} data={dashboardData.frequentAbsences} />
+            </div>
           </div>
         </div>
       ) : (
         /*
-         * Admin & Wali Kelas layout:
+         * Admin, Wali Kelas, & Monitoring layout:
          *
          * Desktop: 2-column grid
          *   LEFT  (col-span-7): Monitoring → Perbandingan → Tren (stacked)
@@ -280,9 +313,7 @@ function Dashboard() {
           </div>
 
           {/* ── RIGHT COLUMN ── */}
-          {/* lg:self-stretch: stretch to match the left column's full height */}
           <div className="lg:col-span-5 flex flex-col gap-4 min-w-0 lg:self-stretch">
-            {/* Each wrapper takes equal share (flex-1) of the column height */}
             {/* 1. Sering Terlambat */}
             <div className="flex-1 flex flex-col min-h-0">
               <FrequentLateTable isTeacher={userIsWali} data={dashboardData.frequentLates} />

@@ -28,28 +28,28 @@ export function StatCard({ title, value, description, icon }) {
 
   return (
     <div
-      className={`relative overflow-hidden rounded-xl border border-border ${accent.bg} p-4 flex flex-col gap-3 shadow-sm hover:shadow-md transition-shadow`}
+      className={`relative overflow-hidden rounded-xl border border-border ${accent.bg} p-2.5 sm:p-4 flex flex-col justify-between h-full min-w-0 gap-1.5 sm:gap-3 shadow-xs hover:shadow-md transition-shadow`}
     >
       {/* Left accent bar */}
-      <span className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full ${accent.bar}`} />
+      <span className={`absolute left-0 top-2 bottom-2 sm:top-3 sm:bottom-3 w-[3px] rounded-r-full ${accent.bar}`} />
 
       {/* Top row: icon + title */}
-      <div className="flex items-start justify-between gap-2 pl-2">
-        <p className="text-[11px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider leading-tight pt-0.5 flex-1">
+      <div className="flex items-start justify-between gap-1.5 sm:gap-2 pl-1.5 sm:pl-2">
+        <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider leading-tight pt-0.5 flex-1 line-clamp-2 min-h-[22px] sm:min-h-0">
           {title}
         </p>
-        <div className={`flex items-center justify-center size-8 rounded-lg shrink-0 ${accent.icon}`}>
-          <IconComponent className="size-4" />
+        <div className={`flex items-center justify-center size-6.5 sm:size-8 rounded-md sm:rounded-lg shrink-0 ${accent.icon}`}>
+          <IconComponent className="size-3.5 sm:size-4" />
         </div>
       </div>
 
       {/* Value */}
-      <div className="pl-2">
-        <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-none">
+      <div className="pl-1.5 sm:pl-2 mt-auto">
+        <p className="text-lg sm:text-3xl font-bold text-foreground tracking-tight leading-none">
           {value}
         </p>
         {description && (
-          <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-1.5 font-medium leading-snug">
+          <p className="text-[9px] sm:text-[11px] text-muted-foreground mt-1 sm:mt-1.5 font-medium leading-snug truncate sm:whitespace-normal">
             {description}
           </p>
         )}
@@ -69,7 +69,7 @@ export function DashboardStats({ stats }) {
       : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6";
 
   return (
-    <div className={`grid ${gridCols} gap-3`}>
+    <div className={`grid ${gridCols} gap-2 sm:gap-3`}>
       {stats.map((stat, idx) => (
         <StatCard
           key={idx}

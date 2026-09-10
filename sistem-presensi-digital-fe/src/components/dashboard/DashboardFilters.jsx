@@ -33,17 +33,17 @@ export function DashboardFilters({ role, onFilterChange }) {
     });
   }, [selectedClass, selectedPeriod, selectedSemester, onFilterChange]);
 
-  const triggerClass = "h-9 text-xs bg-background border-border hover:bg-muted/50 transition-colors";
+  const triggerClass = "h-9 text-xs bg-background border-border hover:bg-muted/50 transition-colors flex-1 sm:flex-none w-full sm:w-[150px] min-w-[130px]";
 
   if (userIsWali || userIsMapel || userIsMon) {
     return (
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground shrink-0">
+      <div className="flex items-center gap-2 flex-wrap w-full">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground shrink-0 py-1">
           <Filter className="size-3.5" />
           <span>Filter</span>
         </div>
         <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-          <SelectTrigger className={`w-full sm:w-[150px] ${triggerClass}`}>
+          <SelectTrigger className={triggerClass}>
             <SelectValue placeholder="Pilih Periode" />
           </SelectTrigger>
           <SelectContent>
@@ -55,7 +55,7 @@ export function DashboardFilters({ role, onFilterChange }) {
         </Select>
         {selectedPeriod === "Semester" && (
           <Select value={selectedSemester} onValueChange={setSelectedSemester}>
-            <SelectTrigger className={`w-full sm:w-[150px] ${triggerClass}`}>
+            <SelectTrigger className={triggerClass}>
               <SelectValue placeholder="Pilih Semester" />
             </SelectTrigger>
             <SelectContent>
@@ -70,13 +70,13 @@ export function DashboardFilters({ role, onFilterChange }) {
 
   // ADMIN view
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground shrink-0">
+    <div className="flex items-center gap-2 flex-wrap w-full">
+      <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground shrink-0 py-1">
         <Filter className="size-3.5" />
         <span>Filter</span>
       </div>
       <Select value={selectedClass} onValueChange={setSelectedClass}>
-        <SelectTrigger className={`w-full sm:w-[150px] ${triggerClass}`}>
+        <SelectTrigger className={triggerClass}>
           <SelectValue placeholder="Pilih Kelas" />
         </SelectTrigger>
         <SelectContent>
@@ -89,7 +89,7 @@ export function DashboardFilters({ role, onFilterChange }) {
         </SelectContent>
       </Select>
       <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-        <SelectTrigger className={`w-full sm:w-[150px] ${triggerClass}`}>
+        <SelectTrigger className={triggerClass}>
           <SelectValue placeholder="Pilih Periode" />
         </SelectTrigger>
         <SelectContent>
@@ -101,7 +101,7 @@ export function DashboardFilters({ role, onFilterChange }) {
       </Select>
       {selectedPeriod === "Semester" && (
         <Select value={selectedSemester} onValueChange={setSelectedSemester}>
-          <SelectTrigger className={`w-full sm:w-[150px] ${triggerClass}`}>
+          <SelectTrigger className={triggerClass}>
             <SelectValue placeholder="Pilih Semester" />
           </SelectTrigger>
           <SelectContent>

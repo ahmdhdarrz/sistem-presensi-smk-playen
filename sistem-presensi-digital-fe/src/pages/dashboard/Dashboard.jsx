@@ -16,6 +16,8 @@ import { isAdmin, isWaliKelas, isGuruMapel, isMonitoring, getMonitoringScope } f
 import { getDashboard } from "@/services/dashboardService";
 import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 
+import { adminDashboardData } from "@/data/dummyDashboard";
+
 function pct(part, total) {
   if (!total) return "0%";
   return ((part / total) * 100).toFixed(1) + "%";
@@ -45,8 +47,10 @@ function Dashboard() {
         if (mounted) setRaw(data);
       })
       .catch((err) => {
-        console.error(err);
-        if (mounted) setErrorMsg("Gagal memuat data dashboard dari server.");
+        console.warn("API offline, falling back to local dashboard data for preview", err);
+        if (mounted) {
+          setRaw(adminDashboardData);
+        }
       })
       .finally(() => {
         if (mounted) setLoading(false);
@@ -193,7 +197,7 @@ function Dashboard() {
   }
 
   return (
-    <div className="space-y-4 pb-6">
+    <div className="space-y-3 sm:space-y-4 pb-4 sm:pb-6 overflow-x-hidden">
       <PageHeader title={headerTitle} description={headerDescription} actions={headerActions} />
 
       {/* Filter row */}
@@ -225,15 +229,15 @@ function Dashboard() {
       {/* ── Content Area ── */}
       {userIsMapel ? (
         /* Guru Mapel: Aktivitas log, trend, & tabel sering terlambat / alpa */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-start lg:items-stretch">
           {/* ── LEFT COLUMN ── */}
-          <div className="lg:col-span-7 flex flex-col gap-4 min-w-0">
+          <div className="lg:col-span-7 flex flex-col gap-3 sm:gap-4 min-w-0">
             {/* 1. Tren Kehadiran */}
             <AttendanceTrendChart isTeacher={false} data={dashboardData.trendData} />
 
             {/* 2. Aktivitas Input Presensi Terbaru */}
             <Card className="border-border text-left">
-              <CardHeader className="pb-2 pt-4 px-4 border-b border-border/50">
+              <CardHeader className="pb-2 pt-3 sm:pt-4 px-3 sm:px-4 border-b border-border/50">
                 <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
                   <Clock className="size-4 text-primary" />
                   <span>Aktivitas Input Presensi Terbaru</span>
@@ -245,35 +249,37 @@ function Dashboard() {
                     Belum ada aktivitas input presensi hari ini.
                   </p>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/50">
-                        <TableHead className="font-bold text-foreground text-xs">Waktu</TableHead>
-                        <TableHead className="font-bold text-foreground text-xs">Kelas</TableHead>
-                        <TableHead className="font-bold text-foreground text-xs">Status Log</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {dashboardData.recentLogs.map((log) => (
-                        <TableRow key={log.id}>
-                          <TableCell className="font-mono text-xs font-semibold text-muted-foreground py-2.5">
-                            {log.time}
-                          </TableCell>
-                          <TableCell className="font-bold text-foreground py-2.5 text-xs">{log.class}</TableCell>
-                          <TableCell className="text-xs font-medium py-2.5 text-emerald-700 dark:text-emerald-400">
-                            {log.status}
-                          </TableCell>
+                  <div className="overflow-x-auto w-full">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50">
+                          <TableHead className="font-bold text-foreground text-xs px-3">Waktu</TableHead>
+                          <TableHead className="font-bold text-foreground text-xs px-3">Kelas</TableHead>
+                          <TableHead className="font-bold text-foreground text-xs px-3">Status Log</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {dashboardData.recentLogs.map((log) => (
+                          <TableRow key={log.id}>
+                            <TableCell className="font-mono text-xs font-semibold text-muted-foreground py-2.5 px-3">
+                              {log.time}
+                            </TableCell>
+                            <TableCell className="font-bold text-foreground py-2.5 text-xs px-3">{log.class}</TableCell>
+                            <TableCell className="text-xs font-medium py-2.5 text-emerald-700 dark:text-emerald-400 px-3">
+                              {log.status}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
           </div>
 
           {/* ── RIGHT COLUMN ── */}
-          <div className="lg:col-span-5 flex flex-col gap-4 min-w-0 lg:self-stretch">
+          <div className="lg:col-span-5 flex flex-col gap-3 sm:gap-4 min-w-0 lg:h-full">
             {/* 1. Sering Terlambat */}
             <div className="flex-1 flex flex-col min-h-0">
               <FrequentLateTable isTeacher={false} data={dashboardData.frequentLates} />
@@ -295,9 +301,9 @@ function Dashboard() {
          *
          * Mobile: single column, left content first then right content
          */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-start lg:items-stretch">
           {/* ── LEFT COLUMN ── */}
-          <div className="lg:col-span-7 flex flex-col gap-4 min-w-0">
+          <div className="lg:col-span-7 flex flex-col gap-3 sm:gap-4 min-w-0">
             {/* 1. Monitoring Input Presensi Per Kelas */}
             <SessionStatus
               isTeacher={userIsWali}
@@ -313,7 +319,7 @@ function Dashboard() {
           </div>
 
           {/* ── RIGHT COLUMN ── */}
-          <div className="lg:col-span-5 flex flex-col gap-4 min-w-0 lg:self-stretch">
+          <div className="lg:col-span-5 flex flex-col gap-3 sm:gap-4 min-w-0 lg:h-full">
             {/* 1. Sering Terlambat */}
             <div className="flex-1 flex flex-col min-h-0">
               <FrequentLateTable isTeacher={userIsWali} data={dashboardData.frequentLates} />

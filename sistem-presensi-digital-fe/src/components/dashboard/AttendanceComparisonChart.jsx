@@ -53,7 +53,7 @@ export function AttendanceComparisonChart({ isTeacher, data }) {
 
   return (
     <Card className="flex flex-col h-full">
-      <CardHeader className="pb-2 pt-4 px-4">
+      <CardHeader className="pb-2 pt-3 sm:pt-4 px-3 sm:px-4">
         <div className="flex items-center gap-2">
           <div className="flex items-center justify-center size-7 rounded-lg bg-primary/10 text-primary shrink-0">
             <BarChart2 className="size-3.5" />
@@ -64,16 +64,16 @@ export function AttendanceComparisonChart({ isTeacher, data }) {
         </div>
       </CardHeader>
 
-      <CardContent className="px-2 pb-3 pt-1 flex-1">
+      <CardContent className="px-1.5 sm:px-2 pb-2.5 sm:pb-3 pt-1 flex-1">
         {isMultiClass ? (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto w-full">
             <div style={{ width: dynamicWidth, minWidth: "100%" }}>
-              <div className="h-[210px]">
+              <div className="h-[180px] sm:h-[210px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data} margin={{ top: 8, right: 8, left: -22, bottom: 0 }} barCategoryGap="30%">
+                  <BarChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }} barCategoryGap="30%">
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                     <XAxis dataKey="class" stroke="var(--muted-foreground)" fontSize={10} tickLine={false} interval={0} />
-                    <YAxis stroke="var(--muted-foreground)" fontSize={10} tickLine={false} width={30} />
+                    <YAxis stroke="var(--muted-foreground)" fontSize={10} tickLine={false} width={26} />
                     <Tooltip content={<CustomTooltip />} cursor={{ fill: "var(--muted)", opacity: 0.5 }} />
                     <Legend content={<CompactLegend />} />
                     <Bar dataKey="Hadir" name="Hadir" fill="#1F5F99" radius={[3, 3, 0, 0]} maxBarSize={18} />
@@ -85,12 +85,12 @@ export function AttendanceComparisonChart({ isTeacher, data }) {
             </div>
           </div>
         ) : (
-          <div className="h-[210px]">
+          <div className="h-[180px] sm:h-[210px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 8, right: 8, left: -22, bottom: 0 }} barCategoryGap="30%">
+              <BarChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }} barCategoryGap="30%">
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="category" stroke="var(--muted-foreground)" fontSize={10} tickLine={false} />
-                <YAxis stroke="var(--muted-foreground)" fontSize={10} tickLine={false} width={30} />
+                <YAxis stroke="var(--muted-foreground)" fontSize={10} tickLine={false} width={26} />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: "var(--muted)", opacity: 0.5 }} />
                 <Legend content={<CompactLegend />} />
                 <Bar dataKey="count" name="Jumlah Siswa" fill="#1F5F99" radius={[3, 3, 0, 0]} maxBarSize={40} />
